@@ -18,6 +18,7 @@ import {
   VAT_TREATMENT_LABELS,
 } from "@/lib/enum-labels";
 import { softDeleteOffer, transitionOffer } from "@/modules/offers/actions";
+import ConvertPanel from "./convert-panel";
 
 const STATUS_VARIANTS: Record<OfferStatus, BadgeProps["variant"]> = {
   DRAFT: "outline",
@@ -189,12 +190,52 @@ export default async function OfferDetailPage({ params }: { params: { id: string
         </Card>
       )}
 
-      {offer.status === OfferStatus.ACCEPTED && (
-        <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
-          Növbəti addım: müştəri üçün <strong>Müqavilə (MSA)</strong> + <strong>RENTAL_START Əlavə</strong> yaradın.
-          (MSA modulu növbəti deploy-da əlavə olunacaq.)
-        </div>
+      {offer.status === OfferStatus.ACCEPTED && editable && (
+        <ConvertSection offerId={offer.id} leadClientId={offer.request.lead.client?.id ?? null} />
       )}
     </div>
+  );
+}
+
+async function ConvertSection({
+  offerId,
+  leadClientId,
+}: {
+  offerId: string;
+  leadClientId: string | null;
+}) {
+  const [clients, equipment] = await Promise.all([
+    prisma.client.findMany({
+      where: { deletedAt: null },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
+    }),
+    prisma.equipment.findMany({
+      where: { deletedAt: null },
+      orderBy: { code: "asc" },
+      select: { id: true, code: true, name: true },
+    }),
+  ]);
+
+  const suggested = `SKY${new Date()
+    .toISOString()
+    .slice(0, 10)
+    .replace(/-/g, "")}`;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>MSA + Əlavə yarat</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ConvertPanel
+          offerId={offerId}
+          clients={clients.map((c) => ({ id: c.id, label: c.name }))}
+          equipment={equipment.map((e) => ({ id: e.id, label: `${e.code} — ${e.name}` }))}
+          defaultClientId={leadClientId ?? undefined}
+          suggestedAgreementNumber={suggested}
+        />
+      </CardContent>
+    </Card>
   );
 }
