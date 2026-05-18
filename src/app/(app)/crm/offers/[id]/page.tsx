@@ -19,6 +19,7 @@ import {
 } from "@/lib/enum-labels";
 import { softDeleteOffer, transitionOffer } from "@/modules/offers/actions";
 import ConvertPanel from "./convert-panel";
+import DocActions from "@/components/doc-actions";
 
 const STATUS_VARIANTS: Record<OfferStatus, BadgeProps["variant"]> = {
   DRAFT: "outline",
@@ -160,6 +161,15 @@ export default async function OfferDetailPage({ params }: { params: { id: string
               </div>
             )}
           </dl>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Sənəd</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <DocActions kind="offer" id={offer.id} token={offer.verifyToken} />
         </CardContent>
       </Card>
 

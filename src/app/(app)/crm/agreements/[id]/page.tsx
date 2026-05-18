@@ -12,6 +12,7 @@ import { PageHeader } from "@/components/page-header";
 import { fmtDate } from "@/lib/format";
 import { ADDENDUM_KIND_LABELS, ADDENDUM_STATUS_LABELS, MSA_STATUS_LABELS } from "@/lib/enum-labels";
 import { softDeleteMasterAgreement } from "@/modules/agreements/actions";
+import DocActions from "@/components/doc-actions";
 
 const MSA_STATUS_VARIANTS: Record<MasterAgreementStatus, BadgeProps["variant"]> = {
   DRAFT: "outline",
@@ -117,6 +118,15 @@ export default async function MsaDetailPage({ params }: { params: { id: string }
               </div>
             )}
           </dl>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Sənəd</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <DocActions kind="msa" id={msa.id} token={msa.verifyToken} />
         </CardContent>
       </Card>
 

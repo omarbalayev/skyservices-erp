@@ -16,6 +16,7 @@ import {
   transitionAddendum,
 } from "@/modules/agreements/actions";
 import EquipmentLinesPanel from "./equipment-panel";
+import DocActions from "@/components/doc-actions";
 
 const STATUS_VARIANTS: Record<AddendumStatus, BadgeProps["variant"]> = {
   DRAFT: "outline",
@@ -157,6 +158,15 @@ export default async function AddendumDetailPage({
           </CardContent>
         </Card>
       )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Sənəd</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <DocActions kind="addendum" id={addendum.id} token={addendum.verifyToken} />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
