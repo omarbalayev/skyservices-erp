@@ -72,15 +72,14 @@ model AuditLog {
 // -----------------------------------------------------------------------------
 
 model Client {
-  id              String    @id @default(cuid())
-  name            String
-  voen            String?   @unique
-  billingAddress  String?
-  notes           String?
-  numberingPrefix String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  deletedAt       DateTime?
+  id             String    @id @default(cuid())
+  name           String
+  voen           String?   @unique
+  billingAddress String?
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
 
   contacts        Contact[]
   leads           Lead[]
@@ -188,6 +187,7 @@ model Request {
   usageZone              String?
   deliveryResponsibility DeliveryResponsibility @default(CUSTOMER)
   operatorNeeded         Boolean                @default(false)
+  nightShift             Boolean                @default(false)
   notes                  String?
 
   createdAt DateTime  @default(now())
@@ -246,6 +246,7 @@ model Offer {
   belowBaselineRule       BelowBaselineRule       @default(FLAT_MONTHLY)
   transportResponsibility TransportResponsibility @default(CUSTOMER)
   operatorIncluded        Boolean                 @default(false)
+  nightShift              Boolean                 @default(false)
   vatTreatment            VatTreatment            @default(EXCLUSIVE)
 
   validUntil  DateTime?
@@ -364,6 +365,7 @@ model AddendumEquipment {
   baseFee                 Decimal                 @db.Decimal(12, 2)
   belowBaselineRule       BelowBaselineRule       @default(FLAT_MONTHLY)
   operatorIncluded        Boolean                 @default(false)
+  nightShift              Boolean                 @default(false)
   transportResponsibility TransportResponsibility @default(CUSTOMER)
   vatTreatment            VatTreatment            @default(EXCLUSIVE)
 
@@ -405,6 +407,8 @@ model Equipment {
   dqn             String?
   status          EquipmentStatus @default(AVAILABLE)
   currentLocation String?
+  /// Link to the public skyservices.az product page so staff can pull full specs.
+  cmsProductUrl   String?
   notes           String?
 
   createdAt DateTime  @default(now())

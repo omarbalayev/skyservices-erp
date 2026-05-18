@@ -1,8 +1,10 @@
 name: Deploy ERP
 
+# Auto-trigger on push is OFF — primary deploy path is local `bash deploy.sh`.
+# This workflow stays as a manual fallback (Actions tab → "Run workflow").
+# Needs ERP_SSH_KEY repo secret to function.
+
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 concurrency:
