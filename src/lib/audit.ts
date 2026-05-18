@@ -7,7 +7,8 @@ type AuditInput = {
   entityType: string;
   entityId: string;
   action: string;
-  diff?: Prisma.InputJsonValue | null;
+  /** Any JSON-serialisable payload. Stored as-is on AuditLog.diff. */
+  diff?: unknown;
   ip?: string | null;
   userAgent?: string | null;
 };
@@ -19,7 +20,10 @@ export async function audit(input: AuditInput): Promise<void> {
       entityType: input.entityType,
       entityId: input.entityId,
       action: input.action,
-      diff: input.diff === undefined || input.diff === null ? Prisma.JsonNull : input.diff,
+      diff:
+        input.diff === undefined || input.diff === null
+          ? Prisma.JsonNull
+          : (JSON.parse(JSON.stringify(input.diff)) as Prisma.InputJsonValue),
       ip: input.ip ?? null,
       userAgent: input.userAgent ?? null,
     },
