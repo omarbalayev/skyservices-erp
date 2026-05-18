@@ -1,6 +1,8 @@
 // SkyServices ERP — Prisma schema
-// Phase 0: identity, audit. Modules (CRM, Fleet, Garage, Warehouse, Finance, Documents)
-// land in subsequent phases — see SkyServices-ERP-Technical.md.
+// Phase 0: identity + audit (DONE)
+// Phase 1: CRM core — Client, Contact, Lead, Request, Offer, MasterAgreement, Addendum, AddendumEquipment
+//          + minimal Equipment (full model lands in Phase 2)
+// See SkyServices-ERP-Technical.md §5 and SkyServices-ERP-BA-Analysis.md §10 for the source of truth.
 
 generator client {
   provider = "prisma-client-js"
@@ -37,14 +39,15 @@ model User {
   updatedAt    DateTime  @updatedAt
   deletedAt    DateTime?
 
-  auditLogs AuditLog[]
+  auditLogs  AuditLog[]
+  leadsOwned Lead[]     @relation("LeadOwner")
 
   @@index([email])
   @@index([role])
 }
 
 // -----------------------------------------------------------------------------
-// Audit log — every mutation. Detailed business modules will write here too.
+// Audit log
 // -----------------------------------------------------------------------------
 
 model AuditLog {
@@ -53,8 +56,8 @@ model AuditLog {
   actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
   entityType String
   entityId   String
-  action     String   // CREATE | UPDATE | DELETE | RESTORE | LOGIN | LOGOUT | ...
-  diff       Json?    // before/after snapshot
+  action     String
+  diff       Json?
   ip         String?
   userAgent  String?
   createdAt  DateTime @default(now())
@@ -62,4 +65,351 @@ model AuditLog {
   @@index([entityType, entityId])
   @@index([actorId])
   @@index([createdAt])
+}
+
+// -----------------------------------------------------------------------------
+// CRM — Client + Contact
+// -----------------------------------------------------------------------------
+
+model Client {
+  id              String    @id @default(cuid())
+  name            String
+  voen            String?   @unique
+  billingAddress  String?
+  notes           String?
+  numberingPrefix String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  contacts        Contact[]
+  leads           Lead[]
+  masterAgreement MasterAgreement?
+
+  @@index([name])
+}
+
+model Contact {
+  id        String    @id @default(cuid())
+  clientId  String
+  client    Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  name      String
+  phone     String?
+  email     String?
+  position  String?
+  isPrimary Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([clientId])
+}
+
+// -----------------------------------------------------------------------------
+// CRM — sales pipeline: Lead → Request → Offer → Addendum
+// -----------------------------------------------------------------------------
+
+enum LeadSource {
+  WEB_FORM
+  PHONE
+  EMAIL
+  WALK_IN
+  REFERRAL
+  OTHER
+}
+
+enum LeadStatus {
+  NEW
+  WORKING
+  LOST
+  CONVERTED
+}
+
+enum LeadLostReason {
+  PRICE
+  NO_FIT_EQUIPMENT
+  COMPETITOR
+  TIMING
+  NO_RESPONSE
+  OTHER
+}
+
+model Lead {
+  id         String          @id @default(cuid())
+  source     LeadSource      @default(PHONE)
+  status     LeadStatus      @default(NEW)
+  lostReason LeadLostReason?
+  lostNote   String?
+
+  clientId     String?
+  client       Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  companyName  String?
+  contactName  String?
+  contactPhone String?
+  contactEmail String?
+
+  description String?
+  ownerId     String?
+  owner       User?     @relation("LeadOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  requests Request[]
+
+  @@index([status])
+  @@index([ownerId])
+  @@index([clientId])
+  @@index([createdAt])
+}
+
+enum RequestStatus {
+  OPEN
+  QUOTED
+  REJECTED
+  CONVERTED
+}
+
+enum DeliveryResponsibility {
+  PROVIDER
+  CUSTOMER
+}
+
+model Request {
+  id     String        @id @default(cuid())
+  leadId String
+  lead   Lead          @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  status RequestStatus @default(OPEN)
+
+  equipmentType          String
+  workingHeightMeters    Decimal?               @db.Decimal(6, 2)
+  rentalStart            DateTime?
+  rentalEnd              DateTime?
+  usageZone              String?
+  deliveryResponsibility DeliveryResponsibility @default(CUSTOMER)
+  operatorNeeded         Boolean                @default(false)
+  notes                  String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  offers Offer[]
+
+  @@index([status])
+  @@index([leadId])
+}
+
+enum RentalPeriodType {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum BelowBaselineRule {
+  FLAT_MONTHLY
+  PRORATE_BY_HOURS
+}
+
+enum TransportResponsibility {
+  PROVIDER
+  CUSTOMER
+  BILLABLE_TO_CUSTOMER
+}
+
+enum VatTreatment {
+  EXCLUSIVE
+  INCLUSIVE
+  EXEMPT
+}
+
+enum OfferStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  EXPIRED
+  SUPERSEDED
+}
+
+model Offer {
+  id        String      @id @default(cuid())
+  requestId String
+  request   Request     @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  version   Int         @default(1)
+  status    OfferStatus @default(DRAFT)
+
+  rentalPeriodType        RentalPeriodType        @default(MONTHLY)
+  baseDaysPerMonth        Int?
+  baseHoursPerDay         Int?
+  baseFee                 Decimal                 @db.Decimal(12, 2)
+  belowBaselineRule       BelowBaselineRule       @default(FLAT_MONTHLY)
+  transportResponsibility TransportResponsibility @default(CUSTOMER)
+  operatorIncluded        Boolean                 @default(false)
+  vatTreatment            VatTreatment            @default(EXCLUSIVE)
+
+  validUntil DateTime?
+  notes      String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  addendums Addendum[]
+
+  @@index([requestId])
+  @@index([status])
+}
+
+// -----------------------------------------------------------------------------
+// CRM — MasterAgreement + Addendum (universal model per BA §10)
+// -----------------------------------------------------------------------------
+
+enum MasterAgreementStatus {
+  DRAFT
+  SIGNED
+  ACTIVE
+  EXPIRED
+  TERMINATED
+}
+
+model MasterAgreement {
+  id              String                @id @default(cuid())
+  clientId        String                @unique
+  client          Client                @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  agreementNumber String                @unique
+  status          MasterAgreementStatus @default(DRAFT)
+  signedAt        DateTime?
+  effectiveFrom   DateTime?
+  effectiveTo     DateTime?
+  autoRenew       Boolean               @default(true)
+  notes           String?
+
+  pdfPath        String?
+  signedCopyPath String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  addendums Addendum[]
+
+  @@index([status])
+  @@index([effectiveTo])
+}
+
+enum AddendumKind {
+  RENTAL_START
+  EQUIPMENT_CHANGE
+  PRICE_CHANGE
+  PERIOD_EXTENSION
+  TERMINATION
+  OTHER
+}
+
+enum AddendumStatus {
+  DRAFT
+  SIGNED
+  ACTIVE
+  SUPERSEDED
+}
+
+model Addendum {
+  id                String          @id @default(cuid())
+  masterAgreementId String
+  masterAgreement   MasterAgreement @relation(fields: [masterAgreementId], references: [id], onDelete: Restrict)
+  addendumNumber    Int
+  kind              AddendumKind
+  status            AddendumStatus  @default(DRAFT)
+
+  offerId String?
+  offer   Offer?  @relation(fields: [offerId], references: [id], onDelete: SetNull)
+
+  effectiveFrom DateTime?
+  effectiveTo   DateTime?
+  notes         String?
+
+  supersededByAddendumId String?
+  supersededBy           Addendum?  @relation("AddendumSupersededBy", fields: [supersededByAddendumId], references: [id], onDelete: SetNull)
+  supersedes             Addendum[] @relation("AddendumSupersededBy")
+
+  pdfPath        String?
+  signedCopyPath String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  equipmentLines AddendumEquipment[]
+
+  @@unique([masterAgreementId, addendumNumber])
+  @@index([masterAgreementId])
+  @@index([status])
+  @@index([effectiveTo])
+}
+
+model AddendumEquipment {
+  id          String    @id @default(cuid())
+  addendumId  String
+  addendum    Addendum  @relation(fields: [addendumId], references: [id], onDelete: Cascade)
+  equipmentId String
+  equipment   Equipment @relation(fields: [equipmentId], references: [id], onDelete: Restrict)
+
+  rentalPeriodType        RentalPeriodType        @default(MONTHLY)
+  baseDaysPerMonth        Int?
+  baseHoursPerDay         Int?
+  baseFee                 Decimal                 @db.Decimal(12, 2)
+  belowBaselineRule       BelowBaselineRule       @default(FLAT_MONTHLY)
+  operatorIncluded        Boolean                 @default(false)
+  transportResponsibility TransportResponsibility @default(CUSTOMER)
+  vatTreatment            VatTreatment            @default(EXCLUSIVE)
+
+  startedAt DateTime?
+  endedAt   DateTime?
+
+  notes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([addendumId])
+  @@index([equipmentId])
+}
+
+// -----------------------------------------------------------------------------
+// Equipment — minimal model so AddendumEquipment can FK to it.
+// Full registry + parts + certifications + motohours + status logs land in Phase 2.
+// -----------------------------------------------------------------------------
+
+enum EquipmentStatus {
+  AVAILABLE
+  RESERVED
+  ON_RENT
+  IN_TRANSIT
+  IN_REPAIR
+  OUT_OF_SERVICE
+}
+
+model Equipment {
+  id              String          @id @default(cuid())
+  code            String          @unique
+  name            String
+  type            String
+  manufacturer    String?
+  model           String?
+  year            Int?
+  serial          String?
+  dqn             String?
+  status          EquipmentStatus @default(AVAILABLE)
+  currentLocation String?
+  notes           String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  addendumLines AddendumEquipment[]
+
+  @@index([code])
+  @@index([status])
 }
