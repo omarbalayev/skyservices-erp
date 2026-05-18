@@ -1,0 +1,31 @@
+name: Deploy ERP
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-erp
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.ERP_SSH_KEY }}" > ~/.ssh/erp
+          chmod 600 ~/.ssh/erp
+          ssh-keyscan -H 116.203.93.158 >> ~/.ssh/known_hosts
+
+      - name: Deploy
+        env:
+          ERP_SERVER: 116.203.93.158
+          ERP_SSH_KEY: /home/runner/.ssh/erp
+        run: |
+          bash deploy.sh

@@ -1,0 +1,65 @@
+// SkyServices ERP — Prisma schema
+// Phase 0: identity, audit. Modules (CRM, Fleet, Garage, Warehouse, Finance, Documents)
+// land in subsequent phases — see SkyServices-ERP-Technical.md.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -----------------------------------------------------------------------------
+// Identity & access
+// -----------------------------------------------------------------------------
+
+enum UserRole {
+  OWNER
+  SALES
+  GARAGE_MANAGER
+  WAREHOUSE
+  ACCOUNTANT
+  FLEET_OPS
+  VIEWER
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  passwordHash String
+  role         UserRole  @default(VIEWER)
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  auditLogs AuditLog[]
+
+  @@index([email])
+  @@index([role])
+}
+
+// -----------------------------------------------------------------------------
+// Audit log — every mutation. Detailed business modules will write here too.
+// -----------------------------------------------------------------------------
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  entityType String
+  entityId   String
+  action     String   // CREATE | UPDATE | DELETE | RESTORE | LOGIN | LOGOUT | ...
+  diff       Json?    // before/after snapshot
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([actorId])
+  @@index([createdAt])
+}
