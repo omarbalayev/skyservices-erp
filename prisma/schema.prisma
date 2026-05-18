@@ -248,8 +248,9 @@ model Offer {
   operatorIncluded        Boolean                 @default(false)
   vatTreatment            VatTreatment            @default(EXCLUSIVE)
 
-  validUntil DateTime?
-  notes      String?
+  validUntil  DateTime?
+  notes       String?
+  verifyToken String?   @unique
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -287,6 +288,7 @@ model MasterAgreement {
 
   pdfPath        String?
   signedCopyPath String?
+  verifyToken    String? @unique
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -335,6 +337,7 @@ model Addendum {
 
   pdfPath        String?
   signedCopyPath String?
+  verifyToken    String? @unique
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
