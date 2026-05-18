@@ -1,3 +1,5 @@
+import { Prisma } from "@prisma/client";
+
 import { prisma } from "@/lib/db";
 
 type AuditInput = {
@@ -5,7 +7,7 @@ type AuditInput = {
   entityType: string;
   entityId: string;
   action: string;
-  diff?: Record<string, unknown> | null;
+  diff?: Prisma.InputJsonValue | null;
   ip?: string | null;
   userAgent?: string | null;
 };
@@ -17,7 +19,7 @@ export async function audit(input: AuditInput): Promise<void> {
       entityType: input.entityType,
       entityId: input.entityId,
       action: input.action,
-      diff: input.diff ?? undefined,
+      diff: input.diff === undefined || input.diff === null ? Prisma.JsonNull : input.diff,
       ip: input.ip ?? null,
       userAgent: input.userAgent ?? null,
     },
