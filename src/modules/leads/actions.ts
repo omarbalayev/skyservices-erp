@@ -104,10 +104,10 @@ export async function updateRequest(id: string, form: FormData) {
   redirect(`/crm/requests/${id}`);
 }
 
-export async function softDeleteRequest(id: string) {
+export async function softDeleteRequest(id: string): Promise<void> {
   const user = await requireRole(CRM_EDITORS);
   const before = await prisma.request.findUnique({ where: { id } });
-  if (!before) return fail("Sorğu tapılmadı");
+  if (!before) throw new Error("Sorğu tapılmadı");
   await prisma.request.update({ where: { id }, data: { deletedAt: new Date() } });
   await audit({ actorId: user.id, entityType: "Request", entityId: id, action: "DELETE" });
   revalidatePath(`/crm/leads/${before.leadId}`);
