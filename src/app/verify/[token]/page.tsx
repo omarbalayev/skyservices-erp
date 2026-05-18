@@ -194,7 +194,7 @@ function OfferView({ data }: { data: NonNullable<Awaited<ReturnType<typeof loadO
                   </tr>
                 )}
                 <tr>
-                  <td className="py-1 text-slate-500">Az istifadə qaydası</td>
+                  <td className="py-1 text-slate-500">Razılaşma qaydası</td>
                   <td className="py-1 text-right">{BELOW_BASELINE_RULE_LABELS[data.belowBaselineRule]}</td>
                 </tr>
               </>
@@ -210,6 +210,12 @@ function OfferView({ data }: { data: NonNullable<Awaited<ReturnType<typeof loadO
             <tr>
               <td className="py-1 text-slate-500">Operator</td>
               <td className="py-1 text-right">{data.operatorIncluded ? "Daxildir" : "Daxil deyil"}</td>
+            </tr>
+            <tr>
+              <td className="py-1 text-slate-500">Gecə növbəsi</td>
+              <td className="py-1 text-right font-medium">
+                {data.nightShift ? "BƏLİ — gecə vaxtı istifadə üçün" : "Xeyr"}
+              </td>
             </tr>
           </tbody>
         </table>
@@ -304,6 +310,7 @@ function AddendumView({ data }: { data: NonNullable<Awaited<ReturnType<typeof lo
                 <th className="px-2 py-2">Dövr</th>
                 <th className="px-2 py-2 text-right">Tarif</th>
                 <th className="px-2 py-2">Operator</th>
+                <th className="px-2 py-2">Gecə</th>
                 <th className="px-2 py-2">ƏDV</th>
               </tr>
             </thead>
@@ -329,6 +336,7 @@ function AddendumView({ data }: { data: NonNullable<Awaited<ReturnType<typeof lo
                   </td>
                   <td className="px-2 py-2 text-right font-semibold">{fmtAzn(l.baseFee)}</td>
                   <td className="px-2 py-2 text-xs">{l.operatorIncluded ? "Daxil" : "—"}</td>
+                  <td className="px-2 py-2 text-xs font-medium">{l.nightShift ? "BƏLİ" : "—"}</td>
                   <td className="px-2 py-2 text-xs">{VAT_TREATMENT_LABELS[l.vatTreatment]}</td>
                 </tr>
               ))}

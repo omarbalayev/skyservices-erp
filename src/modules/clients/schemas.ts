@@ -14,12 +14,6 @@ export const clientSchema = z.object({
     .optional()
     .nullable()
     .transform((v) => (v && v.trim() ? v.trim() : null)),
-  numberingPrefix: z
-    .string()
-    .max(10)
-    .optional()
-    .nullable()
-    .transform((v) => (v ? v.trim().toUpperCase() : null)),
   notes: z
     .string()
     .max(2000)

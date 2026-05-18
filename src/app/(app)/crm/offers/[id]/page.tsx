@@ -137,7 +137,7 @@ export default async function OfferDetailPage({ params }: { params: { id: string
                   <dd>{offer.baseHoursPerDay ?? <span className="text-slate-400">—</span>}</dd>
                 </div>
                 <div>
-                  <dt className="text-xs uppercase text-slate-400">Az istifadə qaydası</dt>
+                  <dt className="text-xs uppercase text-slate-400">Razılaşma qaydası</dt>
                   <dd>{BELOW_BASELINE_RULE_LABELS[offer.belowBaselineRule]}</dd>
                 </div>
               </>
@@ -153,6 +153,16 @@ export default async function OfferDetailPage({ params }: { params: { id: string
             <div>
               <dt className="text-xs uppercase text-slate-400">Operator</dt>
               <dd>{offer.operatorIncluded ? "Daxildir" : "Daxil deyil"}</dd>
+            </div>
+            <div>
+              <dt className="text-xs uppercase text-slate-400">Gecə növbəsi</dt>
+              <dd>
+                {offer.nightShift ? (
+                  <Badge variant="warning">Bəli</Badge>
+                ) : (
+                  <span className="text-slate-500">Xeyr</span>
+                )}
+              </dd>
             </div>
             {offer.notes && (
               <div className="sm:col-span-3">

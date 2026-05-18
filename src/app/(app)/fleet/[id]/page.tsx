@@ -109,6 +109,21 @@ export default async function EquipmentDetailPage({ params }: { params: { id: st
               <dt className="text-xs uppercase text-slate-400">Yaradılma</dt>
               <dd>{fmtDate(eq.createdAt)}</dd>
             </div>
+            {eq.cmsProductUrl && (
+              <div className="sm:col-span-3">
+                <dt className="text-xs uppercase text-slate-400">Texniki spesifikasiya</dt>
+                <dd>
+                  <a
+                    href={eq.cmsProductUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-brand-navy underline"
+                  >
+                    skyservices.az məhsul səhifəsi →
+                  </a>
+                </dd>
+              </div>
+            )}
             {eq.notes && (
               <div className="sm:col-span-3">
                 <dt className="text-xs uppercase text-slate-400">Qeydlər</dt>

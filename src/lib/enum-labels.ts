@@ -81,9 +81,15 @@ export const RENTAL_PERIOD_TYPE_LABELS: Record<RentalPeriodType, string> = {
   MONTHLY: "Aylıq",
 };
 
+// Pricing rule for how monthly bills are calculated when actual usage is BELOW
+// the agreed standard hours. The default (FLAT_MONTHLY) is: the client pays for
+// the full agreed slot regardless of how few hours the equipment was actually
+// run. PRORATE_BY_HOURS is the exceptional, negotiated alternative.
 export const BELOW_BASELINE_RULE_LABELS: Record<BelowBaselineRule, string> = {
-  FLAT_MONTHLY: "Sabit aylıq (LR-004 tipli)",
-  PRORATE_BY_HOURS: "Saat üzrə (Zetaş tipli)",
+  FLAT_MONTHLY:
+    "Razılaşdırılmış aylıq tariflə (default) — faktiki istifadədən az olsa belə tam ödəniş",
+  PRORATE_BY_HOURS:
+    "Faktiki istifadə saatlarına görə — yalnız xüsusi razılaşma ilə",
 };
 
 export const TRANSPORT_RESPONSIBILITY_LABELS: Record<TransportResponsibility, string> = {

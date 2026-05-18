@@ -74,16 +74,6 @@ export default async function ClientDetailPage({ params }: { params: { id: strin
                 <dd>{client.voen ?? <span className="text-slate-400">—</span>}</dd>
               </div>
               <div>
-                <dt className="text-xs uppercase text-slate-400">Faktura prefiksi</dt>
-                <dd>
-                  {client.numberingPrefix ? (
-                    <Badge variant="outline">{client.numberingPrefix}</Badge>
-                  ) : (
-                    <span className="text-slate-400">—</span>
-                  )}
-                </dd>
-              </div>
-              <div>
                 <dt className="text-xs uppercase text-slate-400">Yaradılma</dt>
                 <dd>{fmtDate(client.createdAt)}</dd>
               </div>

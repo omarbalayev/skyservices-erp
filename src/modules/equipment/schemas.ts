@@ -23,6 +23,11 @@ export const equipmentSchema = z.object({
   dqn: trimmedOrNull,
   status: z.nativeEnum(EquipmentStatus).default(EquipmentStatus.AVAILABLE),
   currentLocation: trimmedOrNull,
+  cmsProductUrl: z
+    .union([z.string().url("URL düzgün deyil"), z.literal("")])
+    .optional()
+    .nullable()
+    .transform((v) => (v && v !== "" ? v : null)),
   notes: z
     .string()
     .max(2000)

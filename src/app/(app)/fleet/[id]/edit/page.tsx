@@ -43,6 +43,7 @@ export default async function EditEquipmentPage({ params }: { params: { id: stri
               dqn: eq.dqn,
               status: eq.status,
               currentLocation: eq.currentLocation,
+              cmsProductUrl: eq.cmsProductUrl,
               notes: eq.notes,
             }}
             action={action}

@@ -102,10 +102,16 @@ export default async function EditRequestPage({ params }: { params: { id: string
             <FormField label="İstifadə ərazisi" htmlFor="usageZone">
               <Input id="usageZone" name="usageZone" defaultValue={req.usageZone ?? ""} />
             </FormField>
-            <label className="inline-flex items-center gap-2 text-sm text-slate-700">
-              <Checkbox name="operatorNeeded" value="true" defaultChecked={req.operatorNeeded} />
-              Operator lazımdır
-            </label>
+            <div className="flex flex-wrap gap-4">
+              <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+                <Checkbox name="operatorNeeded" value="true" defaultChecked={req.operatorNeeded} />
+                Operator lazımdır
+              </label>
+              <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+                <Checkbox name="nightShift" value="true" defaultChecked={req.nightShift} />
+                Gecə növbəsi
+              </label>
+            </div>
             <FormField label="Qeydlər" htmlFor="notes">
               <Textarea id="notes" name="notes" defaultValue={req.notes ?? ""} rows={3} />
             </FormField>

@@ -1,14 +1,12 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { EquipmentStatus } from "@prisma/client";
+import type { EquipmentStatus } from "@prisma/client";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { FormField } from "@/components/form-field";
-import { EQUIPMENT_STATUS_LABELS } from "@/lib/enum-labels";
 
 type Initial = {
   code?: string;
@@ -21,6 +19,7 @@ type Initial = {
   dqn?: string | null;
   status?: EquipmentStatus;
   currentLocation?: string | null;
+  cmsProductUrl?: string | null;
   notes?: string | null;
 };
 
@@ -47,20 +46,12 @@ export default function EquipmentForm({
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <FormField label="Kod" htmlFor="code" required hint="Məs.: FL-031">
-          <Input id="code" name="code" defaultValue={initial?.code ?? ""} required />
-        </FormField>
-        <FormField label="Status" htmlFor="status">
-          <Select id="status" name="status" defaultValue={initial?.status ?? EquipmentStatus.AVAILABLE}>
-            {Object.values(EquipmentStatus).map((s) => (
-              <option key={s} value={s}>
-                {EQUIPMENT_STATUS_LABELS[s]}
-              </option>
-            ))}
-          </Select>
-        </FormField>
-      </div>
+      <FormField label="Kod" htmlFor="code" required hint="Məs.: FL-031">
+        <Input id="code" name="code" defaultValue={initial?.code ?? ""} required />
+      </FormField>
+
+      {/* Status is auto-managed by contract/garage actions — see equipment detail page. */}
+      <input type="hidden" name="status" value={initial?.status ?? "AVAILABLE"} />
 
       <FormField label="Ad" htmlFor="name" required>
         <Input id="name" name="name" defaultValue={initial?.name ?? ""} required />
@@ -106,6 +97,20 @@ export default function EquipmentForm({
           name="currentLocation"
           defaultValue={initial?.currentLocation ?? ""}
           placeholder="Məs.: Sitalçay, Baku Tower, Baza"
+        />
+      </FormField>
+
+      <FormField
+        label="skyservices.az məhsul səhifəsi"
+        htmlFor="cmsProductUrl"
+        hint="Texniki spesifikasiyalar üçün — texnika məlumat səhifəsindən link kopyalayın"
+      >
+        <Input
+          id="cmsProductUrl"
+          name="cmsProductUrl"
+          type="url"
+          defaultValue={initial?.cmsProductUrl ?? ""}
+          placeholder="https://skyservices.az/az/products/..."
         />
       </FormField>
 

@@ -7,6 +7,7 @@ import { AddendumKind, AddendumStatus, MasterAgreementStatus, OfferStatus } from
 import { prisma } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { requireRole, CRM_EDITORS } from "@/lib/rbac";
+import { syncEquipmentStatus } from "@/modules/equipment/status-sync";
 import {
   addendumEquipmentSchema,
   addendumSchema,
@@ -173,6 +174,15 @@ export async function transitionAddendum(id: string, target: AddendumStatus): Pr
     });
   }
 
+  // Re-sync equipment status for every line on this addendum (ACTIVE → ON_RENT, SUPERSEDED → AVAILABLE).
+  const lines = await prisma.addendumEquipment.findMany({
+    where: { addendumId: id },
+    select: { equipmentId: true },
+  });
+  for (const l of lines) {
+    await syncEquipmentStatus(l.equipmentId);
+  }
+
   revalidatePath(`/crm/agreements/${before.masterAgreementId}/addendums/${id}`);
   revalidatePath(`/crm/agreements/${before.masterAgreementId}`);
 }
@@ -183,6 +193,14 @@ export async function softDeleteAddendum(id: string): Promise<void> {
   if (!before) throw new Error("Əlavə tapılmadı");
   await prisma.addendum.update({ where: { id }, data: { deletedAt: new Date() } });
   await audit({ actorId: user.id, entityType: "Addendum", entityId: id, action: "DELETE" });
+  // Re-sync equipment status for every line on this addendum.
+  const lines = await prisma.addendumEquipment.findMany({
+    where: { addendumId: id },
+    select: { equipmentId: true },
+  });
+  for (const l of lines) {
+    await syncEquipmentStatus(l.equipmentId);
+  }
   revalidatePath(`/crm/agreements/${before.masterAgreementId}`);
   redirect(`/crm/agreements/${before.masterAgreementId}`);
 }
@@ -207,6 +225,7 @@ export async function addAddendumEquipment(addendumId: string, form: FormData) {
     action: "CREATE",
     diff: { after: parsed.data },
   });
+  await syncEquipmentStatus(parsed.data.equipmentId);
   revalidatePath(`/crm/agreements/${addendum.masterAgreementId}/addendums/${addendumId}`);
   return ok(created.id);
 }
@@ -220,6 +239,7 @@ export async function removeAddendumEquipment(id: string): Promise<void> {
   if (!before) throw new Error("Sətir tapılmadı");
   await prisma.addendumEquipment.delete({ where: { id } });
   await audit({ actorId: user.id, entityType: "AddendumEquipment", entityId: id, action: "DELETE" });
+  await syncEquipmentStatus(before.equipmentId);
   revalidatePath(`/crm/agreements/${before.addendum.masterAgreementId}/addendums/${before.addendum.id}`);
 }
 
@@ -294,6 +314,7 @@ export async function createMsaAndAddendumFromOffer(offerId: string, form: FormD
           baseFee: offer.baseFee,
           belowBaselineRule: offer.belowBaselineRule,
           operatorIncluded: offer.operatorIncluded,
+          nightShift: offer.nightShift,
           transportResponsibility: offer.transportResponsibility,
           vatTreatment: offer.vatTreatment,
           startedAt: effectiveFromRaw ? new Date(effectiveFromRaw) : null,
@@ -325,6 +346,10 @@ export async function createMsaAndAddendumFromOffer(offerId: string, form: FormD
       action: "CONVERT_FROM_OFFER",
       diff: { offerId: offer.id, addendumId: result.addendumId },
     });
+
+    // Sync the equipment status (RENTAL_START addendum starts in DRAFT, so this is a no-op now —
+    // it will flip to ON_RENT when the operator transitions the addendum to ACTIVE).
+    await syncEquipmentStatus(equipmentId);
 
     revalidatePath(`/crm/offers/${offer.id}`);
     revalidatePath("/crm/agreements");

@@ -65,6 +65,7 @@ export const addendumEquipmentSchema = z.object({
   baseFee: z.coerce.number().positive("Tarif müsbət olmalıdır"),
   belowBaselineRule: z.nativeEnum(BelowBaselineRule).default(BelowBaselineRule.FLAT_MONTHLY),
   operatorIncluded: z.coerce.boolean().optional().default(false),
+  nightShift: z.coerce.boolean().optional().default(false),
   transportResponsibility: z.nativeEnum(TransportResponsibility).default(TransportResponsibility.CUSTOMER),
   vatTreatment: z.nativeEnum(VatTreatment).default(VatTreatment.EXCLUSIVE),
   startedAt: optDate,

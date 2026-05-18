@@ -11,7 +11,6 @@ type Initial = {
   name?: string;
   voen?: string | null;
   billingAddress?: string | null;
-  numberingPrefix?: string | null;
   notes?: string | null;
 };
 
@@ -50,23 +49,9 @@ export default function ClientForm({
         />
       </FormField>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <FormField label="VÖEN" htmlFor="voen" hint="Vergi ödəyicisinin eyniləşdirmə nömrəsi">
-          <Input id="voen" name="voen" defaultValue={initial?.voen ?? ""} />
-        </FormField>
-        <FormField
-          label="Hesab-faktura prefiksi"
-          htmlFor="numberingPrefix"
-          hint='Məs.: "LR" → LR-001, LR-002'
-        >
-          <Input
-            id="numberingPrefix"
-            name="numberingPrefix"
-            defaultValue={initial?.numberingPrefix ?? ""}
-            maxLength={10}
-          />
-        </FormField>
-      </div>
+      <FormField label="VÖEN" htmlFor="voen" hint="Vergi ödəyicisinin eyniləşdirmə nömrəsi">
+        <Input id="voen" name="voen" defaultValue={initial?.voen ?? ""} />
+      </FormField>
 
       <FormField label="Hesab-faktura ünvanı" htmlFor="billingAddress">
         <Textarea

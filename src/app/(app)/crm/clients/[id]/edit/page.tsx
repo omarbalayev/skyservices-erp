@@ -37,7 +37,6 @@ export default async function EditClientPage({ params }: { params: { id: string 
               name: client.name,
               voen: client.voen,
               billingAddress: client.billingAddress,
-              numberingPrefix: client.numberingPrefix,
               notes: client.notes,
             }}
             action={action}

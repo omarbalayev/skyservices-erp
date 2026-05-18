@@ -33,6 +33,7 @@ export const offerSchema = z.object({
   belowBaselineRule: z.nativeEnum(BelowBaselineRule).default(BelowBaselineRule.FLAT_MONTHLY),
   transportResponsibility: z.nativeEnum(TransportResponsibility).default(TransportResponsibility.CUSTOMER),
   operatorIncluded: z.coerce.boolean().optional().default(false),
+  nightShift: z.coerce.boolean().optional().default(false),
   vatTreatment: z.nativeEnum(VatTreatment).default(VatTreatment.EXCLUSIVE),
 
   validUntil: z

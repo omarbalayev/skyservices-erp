@@ -36,6 +36,7 @@ type Line = {
   baseFee: string;
   belowBaselineRule: BelowBaselineRule;
   operatorIncluded: boolean;
+  nightShift: boolean;
   transportResponsibility: TransportResponsibility;
   vatTreatment: VatTreatment;
   startedAt: Date | null;
@@ -109,6 +110,7 @@ export default function EquipmentLinesPanel({
                     <span>· {TRANSPORT_RESPONSIBILITY_LABELS[l.transportResponsibility]}</span>
                     <span>· {VAT_TREATMENT_LABELS[l.vatTreatment]}</span>
                     {l.operatorIncluded && <span>· Operator daxil</span>}
+                    {l.nightShift && <Badge variant="warning">Gecə</Badge>}
                     {(l.startedAt || l.endedAt) && (
                       <span>
                         · {fmtDate(l.startedAt)} → {fmtDate(l.endedAt)}
@@ -198,7 +200,11 @@ export default function EquipmentLinesPanel({
                   <option value="10">10</option>
                 </Select>
               </FormField>
-              <FormField label="Az istifadə qaydası" htmlFor="belowBaselineRule">
+              <FormField
+                label="Razılaşma qaydası"
+                htmlFor="belowBaselineRule"
+                hint="Default: tam ödəniş"
+              >
                 <Select
                   id="belowBaselineRule"
                   name="belowBaselineRule"
@@ -234,10 +240,16 @@ export default function EquipmentLinesPanel({
               <Input id="endedAt" name="endedAt" type="date" />
             </FormField>
           </div>
-          <label className="inline-flex items-center gap-2 text-sm text-slate-700">
-            <Checkbox name="operatorIncluded" value="true" />
-            Operator daxildir
-          </label>
+          <div className="flex flex-wrap gap-4">
+            <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+              <Checkbox name="operatorIncluded" value="true" />
+              Operator daxildir
+            </label>
+            <label className="inline-flex items-center gap-2 text-sm text-amber-800">
+              <Checkbox name="nightShift" value="true" />
+              Gecə növbəsi
+            </label>
+          </div>
           <FormField label="Qeydlər" htmlFor="notes">
             <Textarea id="notes" name="notes" rows={2} />
           </FormField>

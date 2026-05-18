@@ -39,6 +39,7 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
           rentalEnd: true,
           usageZone: true,
           operatorNeeded: true,
+          nightShift: true,
           createdAt: true,
           _count: { select: { offers: { where: { deletedAt: null } } } },
         },
@@ -152,6 +153,7 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
                 rentalEnd: r.rentalEnd,
                 usageZone: r.usageZone,
                 operatorNeeded: r.operatorNeeded,
+                nightShift: r.nightShift,
                 createdAt: r.createdAt,
                 offerCount: r._count.offers,
               }))}

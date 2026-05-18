@@ -110,6 +110,16 @@ export default async function RequestDetailPage({ params }: { params: { id: stri
               <dt className="text-xs uppercase text-slate-400">Operator</dt>
               <dd>{req.operatorNeeded ? "Tələb olunur" : "Tələb olunmur"}</dd>
             </div>
+            <div>
+              <dt className="text-xs uppercase text-slate-400">Gecə növbəsi</dt>
+              <dd>
+                {req.nightShift ? (
+                  <Badge variant="warning">Bəli</Badge>
+                ) : (
+                  <span className="text-slate-500">Xeyr</span>
+                )}
+              </dd>
+            </div>
             {req.notes && (
               <div className="sm:col-span-3">
                 <dt className="text-xs uppercase text-slate-400">Qeydlər</dt>

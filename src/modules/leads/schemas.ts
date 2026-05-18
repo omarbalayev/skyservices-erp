@@ -54,6 +54,7 @@ export const requestSchema = z.object({
   usageZone: optStr(200),
   deliveryResponsibility: z.nativeEnum(DeliveryResponsibility).default(DeliveryResponsibility.CUSTOMER),
   operatorNeeded: z.coerce.boolean().optional().default(false),
+  nightShift: z.coerce.boolean().optional().default(false),
   notes: optStr(2000),
 });
 export type RequestInput = z.infer<typeof requestSchema>;

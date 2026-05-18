@@ -23,6 +23,7 @@ type ReqRow = {
   rentalEnd: Date | null;
   usageZone: string | null;
   operatorNeeded: boolean;
+  nightShift: boolean;
   createdAt: Date;
   offerCount: number;
 };
@@ -84,6 +85,7 @@ export default function RequestsPanel({
                     )}
                     {r.usageZone && <span>· {r.usageZone}</span>}
                     {r.operatorNeeded && <span>· Operator</span>}
+                    {r.nightShift && <Badge variant="warning">Gecə</Badge>}
                     <span>· {r.offerCount} təklif</span>
                   </div>
                 </div>
@@ -142,10 +144,16 @@ export default function RequestsPanel({
               </Select>
             </FormField>
           </div>
-          <label className="inline-flex items-center gap-2 text-sm text-slate-700">
-            <Checkbox name="operatorNeeded" value="true" />
-            Operator lazımdır
-          </label>
+          <div className="flex flex-wrap gap-4">
+            <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+              <Checkbox name="operatorNeeded" value="true" />
+              Operator lazımdır
+            </label>
+            <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+              <Checkbox name="nightShift" value="true" />
+              Gecə növbəsi
+            </label>
+          </div>
           <FormField label="Qeydlər" htmlFor="req-notes">
             <Textarea id="req-notes" name="notes" rows={2} />
           </FormField>

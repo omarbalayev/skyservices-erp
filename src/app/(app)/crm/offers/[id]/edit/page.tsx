@@ -44,6 +44,7 @@ export default async function EditOfferPage({ params }: { params: { id: string }
               belowBaselineRule: offer.belowBaselineRule,
               transportResponsibility: offer.transportResponsibility,
               operatorIncluded: offer.operatorIncluded,
+              nightShift: offer.nightShift,
               vatTreatment: offer.vatTreatment,
               validUntil: offer.validUntil,
               notes: offer.notes,

@@ -13,7 +13,6 @@ type Row = {
   id: string;
   name: string;
   voen: string | null;
-  numberingPrefix: string | null;
   createdAt: Date;
   contactCount: number;
   hasMsa: boolean;
@@ -29,7 +28,6 @@ export default async function ClientsPage() {
       id: true,
       name: true,
       voen: true,
-      numberingPrefix: true,
       createdAt: true,
       _count: { select: { contacts: { where: { deletedAt: null } } } },
       masterAgreement: { select: { id: true } },
@@ -40,7 +38,6 @@ export default async function ClientsPage() {
     id: r.id,
     name: r.name,
     voen: r.voen,
-    numberingPrefix: r.numberingPrefix,
     createdAt: r.createdAt,
     contactCount: r._count.contacts,
     hasMsa: !!r.masterAgreement,
@@ -57,16 +54,6 @@ export default async function ClientsPage() {
       ),
     },
     { key: "voen", header: "VÖEN", cell: (r) => r.voen ?? <span className="text-slate-400">—</span> },
-    {
-      key: "prefix",
-      header: "Prefix",
-      cell: (r) =>
-        r.numberingPrefix ? (
-          <Badge variant="outline">{r.numberingPrefix}</Badge>
-        ) : (
-          <span className="text-slate-400">—</span>
-        ),
-    },
     { key: "contacts", header: "Əlaqələr", cell: (r) => r.contactCount },
     {
       key: "msa",

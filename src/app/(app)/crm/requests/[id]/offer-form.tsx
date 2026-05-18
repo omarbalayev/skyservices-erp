@@ -29,6 +29,7 @@ type Initial = {
   belowBaselineRule?: BelowBaselineRule;
   transportResponsibility?: TransportResponsibility;
   operatorIncluded?: boolean;
+  nightShift?: boolean;
   vatTreatment?: VatTreatment;
   validUntil?: Date | null;
   notes?: string | null;
@@ -132,9 +133,9 @@ export default function OfferForm({
             </Select>
           </FormField>
           <FormField
-            label="Az istifadə qaydası"
+            label="Razılaşma qaydası"
             htmlFor="belowBaselineRule"
-            hint="Sabit aylıq = LR-004 tipli; Saat üzrə = Zetaş tipli"
+            hint="Default: müştəri faktiki istifadəsindən az olsa belə razılaşdırılmış ay haqqını tam ödəyir. Saat üzrə hesablama — yalnız xüsusi razılaşma ilə."
           >
             <Select
               id="belowBaselineRule"
@@ -189,6 +190,22 @@ export default function OfferForm({
             Bəli
           </label>
         </FormField>
+      </div>
+
+      <div className="rounded-md bg-amber-50 p-3">
+        <label className="inline-flex items-center gap-2 text-sm font-medium text-amber-800">
+          <Checkbox
+            id="nightShift"
+            name="nightShift"
+            value="true"
+            defaultChecked={!!initial?.nightShift}
+          />
+          Gecə növbəsi istifadəsi
+        </label>
+        <p className="mt-1 text-xs text-amber-700">
+          Müştəri texnikadan gecə vaxtı istifadə edəcəksə bunu erkən mərhələdə qeyd edin — Sorğu, Təklif, Əlavə,
+          Hesab-faktura və bütün əlaqəli sənədlərdə göstəriləcək.
+        </p>
       </div>
 
       <FormField label="Qeydlər" htmlFor="notes">

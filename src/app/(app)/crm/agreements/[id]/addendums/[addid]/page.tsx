@@ -186,6 +186,7 @@ export default async function AddendumDetailPage({
               baseFee: l.baseFee.toString(),
               belowBaselineRule: l.belowBaselineRule,
               operatorIncluded: l.operatorIncluded,
+              nightShift: l.nightShift,
               transportResponsibility: l.transportResponsibility,
               vatTreatment: l.vatTreatment,
               startedAt: l.startedAt,
