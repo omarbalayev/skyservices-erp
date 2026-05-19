@@ -14,6 +14,9 @@ import {
   LEAD_STATUS_LABELS,
 } from "@/lib/enum-labels";
 
+// Edit-only form. Status is shown here for moving NEW → WORKING → LOST/CONVERTED.
+// The CREATE form is in new-lead-form.tsx and does NOT show status.
+
 type Initial = {
   source?: LeadSource;
   status?: LeadStatus;
@@ -46,6 +49,10 @@ export default function LeadForm({
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState<LeadStatus>(initial?.status ?? LeadStatus.NEW);
+  const [clientId, setClientId] = useState<string>(initial?.clientId ?? "");
+
+  const hasClient = clientId !== "";
+  const selectedClientLabel = clients.find((c) => c.id === clientId)?.label ?? "";
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -94,13 +101,14 @@ export default function LeadForm({
         </FormField>
       </div>
 
-      <FormField
-        label="Mövcud müştəri (varsa)"
-        htmlFor="clientId"
-        hint="Müştəri əvvəldən sistemdə varsa seçin. Əks halda aşağıdakı sahələri doldurun."
-      >
-        <Select id="clientId" name="clientId" defaultValue={initial?.clientId ?? ""}>
-          <option value="">— Seçilməyib —</option>
+      <FormField label="Mövcud müştəri" htmlFor="clientId">
+        <Select
+          id="clientId"
+          name="clientId"
+          value={clientId}
+          onChange={(e) => setClientId(e.target.value)}
+        >
+          <option value="">— Seçilməyib (yeni müştəri) —</option>
           {clients.map((c) => (
             <option key={c.id} value={c.id}>
               {c.label}
@@ -109,10 +117,22 @@ export default function LeadForm({
         </Select>
       </FormField>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <FormField label="Şirkət adı (yeni müştəri üçün)" htmlFor="companyName">
+      {hasClient ? (
+        <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-sm">
+          <span className="text-slate-500">Seçilmiş müştəri: </span>
+          <span className="font-medium text-slate-900">{selectedClientLabel}</span>
+          <p className="mt-1 text-xs text-slate-500">
+            Şirkət məlumatları müştəri kartından götürüləcək. Aşağıda yalnız bu konkret müraciət üçün
+            əlaqədar şəxsi qeyd edə bilərsiniz (istəyə bağlı).
+          </p>
+        </div>
+      ) : (
+        <FormField label="Şirkət adı (yeni müştəri)" htmlFor="companyName">
           <Input id="companyName" name="companyName" defaultValue={initial?.companyName ?? ""} />
         </FormField>
+      )}
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <FormField label="Əlaqədar şəxs" htmlFor="contactName">
           <Input id="contactName" name="contactName" defaultValue={initial?.contactName ?? ""} />
         </FormField>

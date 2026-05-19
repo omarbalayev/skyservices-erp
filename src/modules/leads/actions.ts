@@ -6,33 +6,71 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { requireRole, CRM_EDITORS } from "@/lib/rbac";
-import { leadSchema, requestSchema } from "./schemas";
+import { leadSchema, newLeadWithRequestSchema, requestSchema } from "./schemas";
 
 const fail = (error: string) => ({ ok: false as const, error });
 const ok = <T,>(data: T) => ({ ok: true as const, data });
 
 // ----- Lead -----------------------------------------------------------------
 
-export async function createLead(form: FormData) {
+/**
+ * Combined Lead + first Request create. Status defaults to NEW; the first
+ * Request is required (the user is asked to enter equipment type up-front).
+ */
+export async function createLeadWithRequest(form: FormData) {
   const user = await requireRole(CRM_EDITORS);
-  const parsed = leadSchema.safeParse(Object.fromEntries(form));
+  const parsed = newLeadWithRequestSchema.safeParse(Object.fromEntries(form));
   if (!parsed.success) return fail(parsed.error.errors[0]?.message ?? "Yoxlama xətası");
 
-  const created = await prisma.lead.create({
-    data: {
-      ...parsed.data,
-      ownerId: parsed.data.ownerId ?? user.id,
-    },
+  const data = parsed.data;
+
+  // Customer must be identified somehow.
+  if (!data.clientId && !data.companyName && !data.contactName) {
+    return fail("Müştəri seçilməlidir vəya yeni müştəri adı qeyd olunmalıdır.");
+  }
+
+  const { lead } = await prisma.$transaction(async (tx) => {
+    const createdLead = await tx.lead.create({
+      data: {
+        source: data.source,
+        clientId: data.clientId,
+        // If client is selected, ignore the raw company/contact text (we'll use Client + Contact instead).
+        companyName: data.clientId ? null : data.companyName,
+        contactName: data.contactName,
+        contactPhone: data.contactPhone,
+        contactEmail: data.contactEmail,
+        description: data.description,
+        ownerId: data.ownerId ?? user.id,
+      },
+    });
+
+    await tx.request.create({
+      data: {
+        leadId: createdLead.id,
+        equipmentType: data.equipmentType,
+        workingHeightMeters: data.workingHeightMeters,
+        rentalStart: data.rentalStart,
+        rentalEnd: data.rentalEnd,
+        usageZone: data.usageZone,
+        deliveryResponsibility: data.deliveryResponsibility,
+        operatorNeeded: data.operatorNeeded,
+        nightShift: data.nightShift,
+        notes: data.requestNotes,
+      },
+    });
+
+    return { lead: createdLead };
   });
+
   await audit({
     actorId: user.id,
     entityType: "Lead",
-    entityId: created.id,
+    entityId: lead.id,
     action: "CREATE",
-    diff: { after: parsed.data },
+    diff: { after: data, withInitialRequest: true },
   });
   revalidatePath("/crm/leads");
-  redirect(`/crm/leads/${created.id}`);
+  redirect(`/crm/leads/${lead.id}`);
 }
 
 export async function updateLead(id: string, form: FormData) {

@@ -15,7 +15,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { FormField } from "@/components/form-field";
 import {
-  BELOW_BASELINE_RULE_LABELS,
   RENTAL_PERIOD_TYPE_LABELS,
   TRANSPORT_RESPONSIBILITY_LABELS,
   VAT_TREATMENT_LABELS,
@@ -132,23 +131,14 @@ export default function OfferForm({
               <option value="10">10 saat</option>
             </Select>
           </FormField>
-          <FormField
-            label="Razılaşma qaydası"
-            htmlFor="belowBaselineRule"
-            hint="Default: müştəri faktiki istifadəsindən az olsa belə razılaşdırılmış ay haqqını tam ödəyir. Saat üzrə hesablama — yalnız xüsusi razılaşma ilə."
-          >
-            <Select
-              id="belowBaselineRule"
-              name="belowBaselineRule"
-              defaultValue={initial?.belowBaselineRule ?? BelowBaselineRule.FLAT_MONTHLY}
-            >
-              {Object.values(BelowBaselineRule).map((r) => (
-                <option key={r} value={r}>
-                  {BELOW_BASELINE_RULE_LABELS[r]}
-                </option>
-              ))}
-            </Select>
-          </FormField>
+          {/* Pricing rule (razılaşma qaydası) is intentionally hidden — default is always
+              FLAT_MONTHLY: customer pays the full agreed monthly fee regardless of actual
+              hours used. Exceptional hourly-prorate arrangements will be handled separately. */}
+          <input
+            type="hidden"
+            name="belowBaselineRule"
+            value={initial?.belowBaselineRule ?? BelowBaselineRule.FLAT_MONTHLY}
+          />
         </div>
       )}
 

@@ -9,6 +9,53 @@ const optStr = (max: number) =>
     .nullable()
     .transform((v) => (v && v.trim() ? v.trim() : null));
 
+const optDate = z
+  .union([z.coerce.date(), z.literal("")])
+  .optional()
+  .nullable()
+  .transform((v) => (v === "" || v === null || v === undefined ? null : (v as Date)));
+
+const optNum = (max: number) =>
+  z
+    .union([z.coerce.number().nonnegative().max(max), z.literal("")])
+    .optional()
+    .nullable()
+    .transform((v) => (v === "" || v === null || v === undefined ? null : (v as number)));
+
+/**
+ * Combined Lead + first Request, used by the New Lead form.
+ * Status is NOT captured here — new leads default to NEW server-side.
+ */
+export const newLeadWithRequestSchema = z.object({
+  // Lead fields
+  source: z.nativeEnum(LeadSource).default(LeadSource.PHONE),
+  clientId: optStr(50),
+  companyName: optStr(200),
+  contactName: optStr(200),
+  contactPhone: optStr(50),
+  contactEmail: z
+    .union([z.string().email("Email düzgün deyil"), z.literal("")])
+    .optional()
+    .nullable()
+    .transform((v) => (v && v !== "" ? v : null)),
+  description: optStr(2000),
+  ownerId: optStr(50),
+
+  // Initial Request fields
+  equipmentType: z.string().min(1, "Texnika növü tələb olunur").max(200),
+  workingHeightMeters: optNum(100),
+  rentalStart: optDate,
+  rentalEnd: optDate,
+  usageZone: optStr(200),
+  deliveryResponsibility: z
+    .nativeEnum(DeliveryResponsibility)
+    .default(DeliveryResponsibility.CUSTOMER),
+  operatorNeeded: z.coerce.boolean().optional().default(false),
+  nightShift: z.coerce.boolean().optional().default(false),
+  requestNotes: optStr(2000),
+});
+export type NewLeadWithRequestInput = z.infer<typeof newLeadWithRequestSchema>;
+
 export const leadSchema = z.object({
   source: z.nativeEnum(LeadSource).default(LeadSource.PHONE),
   status: z.nativeEnum(LeadStatus).default(LeadStatus.NEW),

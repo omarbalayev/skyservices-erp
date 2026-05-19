@@ -5,11 +5,11 @@ import { prisma } from "@/lib/db";
 import { requireRole, CRM_EDITORS } from "@/lib/rbac";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/page-header";
-import { createLead } from "@/modules/leads/actions";
-import LeadForm from "../lead-form";
+import { createLeadWithRequest } from "@/modules/leads/actions";
+import NewLeadForm from "../new-lead-form";
 
 export default async function NewLeadPage() {
-  await requireRole(CRM_EDITORS);
+  const user = await requireRole(CRM_EDITORS);
 
   const [clients, owners] = await Promise.all([
     prisma.client.findMany({
@@ -28,6 +28,7 @@ export default async function NewLeadPage() {
     <div className="mx-auto max-w-3xl">
       <PageHeader
         title="Yeni müraciət"
+        description="Müştəri və ilkin sorğu eyni anda qeyd olunur. Status növbəti addımlarda dəyişdirilə bilər."
         actions={
           <Link
             href="/crm/leads"
@@ -39,11 +40,11 @@ export default async function NewLeadPage() {
       />
       <Card>
         <CardContent>
-          <LeadForm
+          <NewLeadForm
             clients={clients.map((c) => ({ id: c.id, label: c.name }))}
             owners={owners.map((u) => ({ id: u.id, label: u.name }))}
-            action={createLead}
-            submitLabel="Yarat"
+            defaultOwnerId={user.id}
+            action={createLeadWithRequest}
           />
         </CardContent>
       </Card>

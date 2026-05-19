@@ -17,7 +17,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { FormField } from "@/components/form-field";
 import {
-  BELOW_BASELINE_RULE_LABELS,
   RENTAL_PERIOD_TYPE_LABELS,
   TRANSPORT_RESPONSIBILITY_LABELS,
   VAT_TREATMENT_LABELS,
@@ -103,9 +102,6 @@ export default function EquipmentLinesPanel({
                       <span>
                         · {l.baseDaysPerMonth}g × {l.baseHoursPerDay}saat
                       </span>
-                    )}
-                    {l.rentalPeriodType === "MONTHLY" && (
-                      <span>· {BELOW_BASELINE_RULE_LABELS[l.belowBaselineRule]}</span>
                     )}
                     <span>· {TRANSPORT_RESPONSIBILITY_LABELS[l.transportResponsibility]}</span>
                     <span>· {VAT_TREATMENT_LABELS[l.vatTreatment]}</span>
@@ -200,23 +196,8 @@ export default function EquipmentLinesPanel({
                   <option value="10">10</option>
                 </Select>
               </FormField>
-              <FormField
-                label="Razılaşma qaydası"
-                htmlFor="belowBaselineRule"
-                hint="Default: tam ödəniş"
-              >
-                <Select
-                  id="belowBaselineRule"
-                  name="belowBaselineRule"
-                  defaultValue={BelowBaselineRule.FLAT_MONTHLY}
-                >
-                  {Object.values(BelowBaselineRule).map((b) => (
-                    <option key={b} value={b}>
-                      {BELOW_BASELINE_RULE_LABELS[b]}
-                    </option>
-                  ))}
-                </Select>
-              </FormField>
+              {/* belowBaselineRule intentionally hidden — defaults to FLAT_MONTHLY. */}
+              <input type="hidden" name="belowBaselineRule" value={BelowBaselineRule.FLAT_MONTHLY} />
             </div>
           )}
           <div className="grid grid-cols-1 gap-3 md:grid-cols-3">

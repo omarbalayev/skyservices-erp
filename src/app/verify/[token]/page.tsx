@@ -5,7 +5,6 @@ import { fmtAzn, fmtDate } from "@/lib/format";
 import {
   ADDENDUM_KIND_LABELS,
   ADDENDUM_STATUS_LABELS,
-  BELOW_BASELINE_RULE_LABELS,
   MSA_STATUS_LABELS,
   OFFER_STATUS_LABELS,
   RENTAL_PERIOD_TYPE_LABELS,
@@ -193,10 +192,6 @@ function OfferView({ data }: { data: NonNullable<Awaited<ReturnType<typeof loadO
                     <td className="py-1 text-right">{data.baseHoursPerDay}</td>
                   </tr>
                 )}
-                <tr>
-                  <td className="py-1 text-slate-500">Razılaşma qaydası</td>
-                  <td className="py-1 text-right">{BELOW_BASELINE_RULE_LABELS[data.belowBaselineRule]}</td>
-                </tr>
               </>
             )}
             <tr>

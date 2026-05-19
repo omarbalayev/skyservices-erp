@@ -11,7 +11,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/page-header";
 import { fmtAzn, fmtDate } from "@/lib/format";
 import {
-  BELOW_BASELINE_RULE_LABELS,
   OFFER_STATUS_LABELS,
   RENTAL_PERIOD_TYPE_LABELS,
   TRANSPORT_RESPONSIBILITY_LABELS,
@@ -135,10 +134,6 @@ export default async function OfferDetailPage({ params }: { params: { id: string
                 <div>
                   <dt className="text-xs uppercase text-slate-400">Gündə iş saatı</dt>
                   <dd>{offer.baseHoursPerDay ?? <span className="text-slate-400">—</span>}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs uppercase text-slate-400">Razılaşma qaydası</dt>
-                  <dd>{BELOW_BASELINE_RULE_LABELS[offer.belowBaselineRule]}</dd>
                 </div>
               </>
             )}
