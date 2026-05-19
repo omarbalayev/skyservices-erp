@@ -48,14 +48,15 @@ export default function RequestsPanel({
 
   async function onAdd(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const formEl = e.currentTarget; // capture before await
     setSubmitting(true);
     setError(null);
-    const result = await addRequest(leadId, new FormData(e.currentTarget));
+    const result = await addRequest(leadId, new FormData(formEl));
     setSubmitting(false);
     if (result?.ok === false) {
       setError(result.error);
     } else {
-      e.currentTarget.reset();
+      formEl.reset();
       setShowForm(false);
     }
   }

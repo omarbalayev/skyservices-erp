@@ -215,6 +215,30 @@ export async function addAddendumEquipment(addendumId: string, form: FormData) {
   const addendum = await prisma.addendum.findUnique({ where: { id: addendumId } });
   if (!addendum || addendum.deletedAt) return fail("Əlavə tapılmadı");
 
+  // Reject if the equipment is already on an active line on another addendum.
+  const busy = await prisma.addendumEquipment.findFirst({
+    where: {
+      equipmentId: parsed.data.equipmentId,
+      addendumId: { not: addendumId },
+      OR: [{ endedAt: null }, { endedAt: { gt: new Date() } }],
+      addendum: { status: AddendumStatus.ACTIVE, deletedAt: null },
+    },
+    select: {
+      id: true,
+      addendum: {
+        select: {
+          addendumNumber: true,
+          masterAgreement: { select: { agreementNumber: true } },
+        },
+      },
+    },
+  });
+  if (busy) {
+    return fail(
+      `Texnika başqa aktiv əlavədə istifadədədir: MSA ${busy.addendum.masterAgreement.agreementNumber}, Əlavə ${busy.addendum.addendumNumber}.`,
+    );
+  }
+
   const created = await prisma.addendumEquipment.create({
     data: { addendumId, ...parsed.data },
   });
@@ -303,7 +327,29 @@ export async function createMsaAndAddendumFromOffer(offerId: string, form: FormD
           effectiveTo: effectiveToRaw ? new Date(effectiveToRaw) : null,
         },
       });
-      // 3. Create AddendumEquipment line copying pricing from the offer.
+      // 3. Reject double-booking.
+      const busy = await tx.addendumEquipment.findFirst({
+        where: {
+          equipmentId,
+          OR: [{ endedAt: null }, { endedAt: { gt: new Date() } }],
+          addendum: { status: AddendumStatus.ACTIVE, deletedAt: null },
+        },
+        select: {
+          addendum: {
+            select: {
+              addendumNumber: true,
+              masterAgreement: { select: { agreementNumber: true } },
+            },
+          },
+        },
+      });
+      if (busy) {
+        throw new Error(
+          `Texnika başqa aktiv əlavədə istifadədədir: MSA ${busy.addendum.masterAgreement.agreementNumber}, Əlavə ${busy.addendum.addendumNumber}.`,
+        );
+      }
+
+      // 4. Create AddendumEquipment line copying pricing from the offer.
       await tx.addendumEquipment.create({
         data: {
           addendumId: addendum.id,
@@ -357,6 +403,9 @@ export async function createMsaAndAddendumFromOffer(offerId: string, form: FormD
   } catch (e) {
     if (e instanceof Error && e.message.includes("Unique constraint")) {
       return fail("Bu müqavilə nömrəsi artıq istifadədədir.");
+    }
+    if (e instanceof Error && e.message.startsWith("Texnika başqa aktiv")) {
+      return fail(e.message);
     }
     throw e;
   }

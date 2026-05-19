@@ -29,16 +29,47 @@ export async function createLeadWithRequest(form: FormData) {
     return fail("Müştəri seçilməlidir vəya yeni müştəri adı qeyd olunmalıdır.");
   }
 
-  const { lead } = await prisma.$transaction(async (tx) => {
+  const { lead, clientCreated } = await prisma.$transaction(async (tx) => {
+    // Resolve clientId — either the picked one, or auto-create a Client from companyName.
+    let clientId = data.clientId ?? null;
+    let createdNewClient = false;
+    if (!clientId && data.companyName) {
+      const existing = await tx.client.findFirst({
+        where: { deletedAt: null, name: { equals: data.companyName, mode: "insensitive" } },
+        select: { id: true },
+      });
+      if (existing) {
+        clientId = existing.id;
+      } else {
+        const newClient = await tx.client.create({ data: { name: data.companyName } });
+        clientId = newClient.id;
+        createdNewClient = true;
+        // Carry the lead's contact info onto the new Client as its primary Contact.
+        if (data.contactName) {
+          await tx.contact.create({
+            data: {
+              clientId: newClient.id,
+              name: data.contactName,
+              phone: data.contactPhone,
+              email: data.contactEmail,
+              isPrimary: true,
+            },
+          });
+        }
+      }
+    }
+
     const createdLead = await tx.lead.create({
       data: {
         source: data.source,
-        clientId: data.clientId,
-        // If client is selected, ignore the raw company/contact text (we'll use Client + Contact instead).
-        companyName: data.clientId ? null : data.companyName,
-        contactName: data.contactName,
-        contactPhone: data.contactPhone,
-        contactEmail: data.contactEmail,
+        clientId,
+        // companyName/contactName/etc are only kept on Lead when no Client was resolved
+        // (i.e. the operator submitted just contact info, no company). Once a Client exists,
+        // the source of truth lives there.
+        companyName: clientId ? null : data.companyName,
+        contactName: clientId ? null : data.contactName,
+        contactPhone: clientId ? null : data.contactPhone,
+        contactEmail: clientId ? null : data.contactEmail,
         description: data.description,
         ownerId: data.ownerId ?? user.id,
       },
@@ -59,7 +90,7 @@ export async function createLeadWithRequest(form: FormData) {
       },
     });
 
-    return { lead: createdLead };
+    return { lead: createdLead, clientCreated: createdNewClient };
   });
 
   await audit({
@@ -67,9 +98,10 @@ export async function createLeadWithRequest(form: FormData) {
     entityType: "Lead",
     entityId: lead.id,
     action: "CREATE",
-    diff: { after: data, withInitialRequest: true },
+    diff: { after: data, withInitialRequest: true, clientId: lead.clientId, clientCreated },
   });
   revalidatePath("/crm/leads");
+  revalidatePath("/crm/clients");
   redirect(`/crm/leads/${lead.id}`);
 }
 

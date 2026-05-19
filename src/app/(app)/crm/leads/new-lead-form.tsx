@@ -20,16 +20,18 @@ export default function NewLeadForm({
   clients,
   owners,
   defaultOwnerId,
+  defaultClientId,
   action,
 }: {
   clients: Option[];
   owners: Option[];
   defaultOwnerId?: string;
+  defaultClientId?: string;
   action: (formData: FormData) => Promise<{ ok: false; error: string } | void>;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [clientId, setClientId] = useState<string>("");
+  const [clientId, setClientId] = useState<string>(defaultClientId ?? "");
 
   const hasClient = clientId !== "";
   const selectedClientLabel = clients.find((c) => c.id === clientId)?.label ?? "";

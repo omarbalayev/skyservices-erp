@@ -32,16 +32,17 @@ export default function ContactsPanel({
 
   async function onAdd(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const formEl = e.currentTarget; // capture before await — React event is pooled
     setAdding(true);
     setError(null);
-    const fd = new FormData(e.currentTarget);
+    const fd = new FormData(formEl);
     fd.set("clientId", clientId);
     const result = await addContact(fd);
     setAdding(false);
     if (result?.ok === false) {
       setError(result.error);
     } else {
-      e.currentTarget.reset();
+      formEl.reset();
       setShowForm(false);
     }
   }

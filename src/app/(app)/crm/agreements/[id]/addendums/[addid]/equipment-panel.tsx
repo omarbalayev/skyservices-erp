@@ -62,14 +62,15 @@ export default function EquipmentLinesPanel({
 
   async function onAdd(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const formEl = e.currentTarget; // capture before await
     setSubmitting(true);
     setError(null);
-    const result = await addAddendumEquipment(addendumId, new FormData(e.currentTarget));
+    const result = await addAddendumEquipment(addendumId, new FormData(formEl));
     setSubmitting(false);
     if (result?.ok === false) {
       setError(result.error);
     } else {
-      e.currentTarget.reset();
+      formEl.reset();
       setShowForm(false);
       setPeriodType(RentalPeriodType.MONTHLY);
     }

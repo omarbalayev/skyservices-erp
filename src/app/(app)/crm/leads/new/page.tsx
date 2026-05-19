@@ -8,7 +8,11 @@ import { PageHeader } from "@/components/page-header";
 import { createLeadWithRequest } from "@/modules/leads/actions";
 import NewLeadForm from "../new-lead-form";
 
-export default async function NewLeadPage() {
+export default async function NewLeadPage({
+  searchParams,
+}: {
+  searchParams: { clientId?: string };
+}) {
   const user = await requireRole(CRM_EDITORS);
 
   const [clients, owners] = await Promise.all([
@@ -44,6 +48,7 @@ export default async function NewLeadPage() {
             clients={clients.map((c) => ({ id: c.id, label: c.name }))}
             owners={owners.map((u) => ({ id: u.id, label: u.name }))}
             defaultOwnerId={user.id}
+            defaultClientId={searchParams.clientId}
             action={createLeadWithRequest}
           />
         </CardContent>

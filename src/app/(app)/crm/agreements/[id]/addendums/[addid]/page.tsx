@@ -44,8 +44,16 @@ export default async function AddendumDetailPage({
   if (!addendum || addendum.deletedAt) notFound();
   if (addendum.masterAgreementId !== params.id) notFound();
 
+  // Pickable equipment: AVAILABLE units, PLUS any unit already attached to this addendum
+  // (so it stays listed even though it's now ON_RENT because of THIS addendum).
   const allEquipment = await prisma.equipment.findMany({
-    where: { deletedAt: null },
+    where: {
+      deletedAt: null,
+      OR: [
+        { status: "AVAILABLE" },
+        { addendumLines: { some: { addendumId: addendum.id } } },
+      ],
+    },
     orderBy: { code: "asc" },
     select: { id: true, code: true, name: true },
   });

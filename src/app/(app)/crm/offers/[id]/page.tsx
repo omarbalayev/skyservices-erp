@@ -226,7 +226,7 @@ async function ConvertSection({
       select: { id: true, name: true },
     }),
     prisma.equipment.findMany({
-      where: { deletedAt: null },
+      where: { deletedAt: null, status: "AVAILABLE" },
       orderBy: { code: "asc" },
       select: { id: true, code: true, name: true },
     }),
