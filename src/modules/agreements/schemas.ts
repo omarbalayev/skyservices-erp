@@ -25,11 +25,13 @@ const optDate = z
 
 export const masterAgreementSchema = z.object({
   clientId: z.string().min(1, "Müştəri tələb olunur"),
+  // agreementNumber is auto-generated on create; for update, the user can edit it.
+  // On create the form omits this field — server fills it via generateAgreementNumber.
   agreementNumber: z
     .string()
-    .min(1, "Müqavilə nömrəsi tələb olunur")
     .max(50)
-    .transform((v) => v.trim().toUpperCase()),
+    .optional()
+    .transform((v) => (v && v.trim() ? v.trim().toUpperCase() : undefined)),
   status: z.nativeEnum(MasterAgreementStatus).default(MasterAgreementStatus.DRAFT),
   signedAt: optDate,
   effectiveFrom: optDate,

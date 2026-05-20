@@ -15,13 +15,11 @@ export default function ConvertPanel({
   clients,
   equipment,
   defaultClientId,
-  suggestedAgreementNumber,
 }: {
   offerId: string;
   clients: Option[];
   equipment: Option[];
   defaultClientId?: string;
-  suggestedAgreementNumber?: string;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -42,26 +40,20 @@ export default function ConvertPanel({
         təklifin qiyməti texnika sətrinə kopyalanır.
       </p>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <FormField label="Müştəri" htmlFor="clientId" required>
-          <Select id="clientId" name="clientId" required defaultValue={defaultClientId ?? ""}>
-            <option value="">— Seçin —</option>
-            {clients.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.label}
-              </option>
-            ))}
-          </Select>
-        </FormField>
-        <FormField label="Müqavilə №" htmlFor="agreementNumber" required hint="Yeni MSA yaranırsa istifadə olunur">
-          <Input
-            id="agreementNumber"
-            name="agreementNumber"
-            required
-            defaultValue={suggestedAgreementNumber ?? ""}
-          />
-        </FormField>
-      </div>
+      <FormField label="Müştəri" htmlFor="clientId" required>
+        <Select id="clientId" name="clientId" required defaultValue={defaultClientId ?? ""}>
+          <option value="">— Seçin —</option>
+          {clients.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.label}
+            </option>
+          ))}
+        </Select>
+      </FormField>
+
+      <p className="rounded-md border border-slate-200 bg-slate-50 p-2 text-xs text-slate-500">
+        Yeni MSA yaranırsa, müqavilə nömrəsi sistem tərəfindən avtomatik veriləcək.
+      </p>
 
       <FormField label="Texnika" htmlFor="equipmentId" required>
         <Select id="equipmentId" name="equipmentId" required defaultValue="">

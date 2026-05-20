@@ -45,6 +45,7 @@ export default async function NewMsaPage() {
           ) : (
             <MsaForm
               clients={clients.map((c) => ({ id: c.id, label: c.name }))}
+              showAgreementNumber={false}
               action={createMasterAgreement}
               submitLabel="MSA yarat"
             />

@@ -293,11 +293,6 @@ async function ConvertSection({
     }),
   ]);
 
-  const suggested = `SKY${new Date()
-    .toISOString()
-    .slice(0, 10)
-    .replace(/-/g, "")}`;
-
   return (
     <Card>
       <CardHeader>
@@ -309,7 +304,6 @@ async function ConvertSection({
           clients={clients.map((c) => ({ id: c.id, label: c.name }))}
           equipment={equipment.map((e) => ({ id: e.id, label: `${e.code} — ${e.name}` }))}
           defaultClientId={leadClientId ?? undefined}
-          suggestedAgreementNumber={suggested}
         />
       </CardContent>
     </Card>

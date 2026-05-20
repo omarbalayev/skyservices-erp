@@ -27,6 +27,7 @@ export default function MsaForm({
   initial,
   clients,
   clientLocked,
+  showAgreementNumber = true,
   action,
   submitLabel = "Yadda saxla",
 }: {
@@ -34,6 +35,8 @@ export default function MsaForm({
   clients: { id: string; label: string }[];
   /** If true, the client select is rendered as a read-only hidden field (edit mode). */
   clientLocked?: boolean;
+  /** When false (typical on create), the contract number is auto-generated server-side and the input is hidden. */
+  showAgreementNumber?: boolean;
   action: (formData: FormData) => Promise<{ ok: false; error: string } | void>;
   submitLabel?: string;
 }) {
@@ -51,30 +54,35 @@ export default function MsaForm({
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {clientLocked ? (
-          <input type="hidden" name="clientId" value={initial?.clientId ?? ""} />
-        ) : (
-          <FormField label="Müştəri" htmlFor="clientId" required>
-            <Select id="clientId" name="clientId" required defaultValue={initial?.clientId ?? ""}>
-              <option value="">— Seçin —</option>
-              {clients.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.label}
-                </option>
-              ))}
-            </Select>
-          </FormField>
-        )}
-        <FormField label="Müqavilə №" htmlFor="agreementNumber" required hint="Məs.: SKY18042026">
+      {clientLocked ? (
+        <input type="hidden" name="clientId" value={initial?.clientId ?? ""} />
+      ) : (
+        <FormField label="Müştəri" htmlFor="clientId" required>
+          <Select id="clientId" name="clientId" required defaultValue={initial?.clientId ?? ""}>
+            <option value="">— Seçin —</option>
+            {clients.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.label}
+              </option>
+            ))}
+          </Select>
+        </FormField>
+      )}
+
+      {showAgreementNumber ? (
+        <FormField label="Müqavilə №" htmlFor="agreementNumber" hint="Məs.: SKY18042026">
           <Input
             id="agreementNumber"
             name="agreementNumber"
-            required
             defaultValue={initial?.agreementNumber ?? ""}
           />
         </FormField>
-      </div>
+      ) : (
+        <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-500">
+          Müqavilə nömrəsi sistem tərəfindən avtomatik yaradılacaq (məs.{" "}
+          <span className="font-mono">SKYDDMMYYYY</span>).
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <FormField label="Status" htmlFor="status">

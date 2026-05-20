@@ -14,6 +14,33 @@ import {
   masterAgreementSchema,
 } from "./schemas";
 
+type PrismaLikeForCheck = {
+  masterAgreement: { findUnique: (args: { where: { agreementNumber: string } }) => Promise<unknown> };
+};
+
+/**
+ * Generate a system-wide MSA contract number.
+ * Format: `SKY` + DDMMYYYY (matches existing convention, e.g. SKY18042026).
+ * If today already has an MSA, appends `-2`, `-3`, …
+ */
+async function generateAgreementNumber(client: PrismaLikeForCheck): Promise<string> {
+  const now = new Date();
+  const dd = String(now.getDate()).padStart(2, "0");
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const yyyy = String(now.getFullYear());
+  const base = `SKY${dd}${mm}${yyyy}`;
+
+  // Optimistic check + suffix probe (collision rare; this is fine without a counter table).
+  let candidate = base;
+  let n = 2;
+  while (await client.masterAgreement.findUnique({ where: { agreementNumber: candidate } })) {
+    candidate = `${base}-${n}`;
+    n += 1;
+    if (n > 50) throw new Error("Müqavilə nömrəsinin yaradılması alınmadı.");
+  }
+  return candidate;
+}
+
 const fail = (error: string) => ({ ok: false as const, error });
 const ok = <T,>(data: T) => ({ ok: true as const, data });
 
@@ -24,14 +51,19 @@ export async function createMasterAgreement(form: FormData) {
   const parsed = masterAgreementSchema.safeParse(Object.fromEntries(form));
   if (!parsed.success) return fail(parsed.error.errors[0]?.message ?? "Yoxlama xətası");
 
+  // Auto-generate the contract number if the form didn't supply one.
+  const agreementNumber = parsed.data.agreementNumber ?? (await generateAgreementNumber(prisma));
+
   try {
-    const created = await prisma.masterAgreement.create({ data: parsed.data });
+    const created = await prisma.masterAgreement.create({
+      data: { ...parsed.data, agreementNumber },
+    });
     await audit({
       actorId: user.id,
       entityType: "MasterAgreement",
       entityId: created.id,
       action: "CREATE",
-      diff: { after: parsed.data },
+      diff: { after: { ...parsed.data, agreementNumber } },
     });
     revalidatePath("/crm/agreements");
     redirect(`/crm/agreements/${created.id}`);
@@ -52,16 +84,22 @@ export async function updateMasterAgreement(id: string, form: FormData) {
   if (!before || before.deletedAt) return fail("MSA tapılmadı");
 
   try {
-    // clientId is immutable
-    const { clientId: _ignored, ...rest } = parsed.data;
+    // clientId is immutable. If agreementNumber wasn't provided, keep the existing one.
+    const { clientId: _ignored, agreementNumber, ...rest } = parsed.data;
     void _ignored;
-    await prisma.masterAgreement.update({ where: { id }, data: rest });
+    await prisma.masterAgreement.update({
+      where: { id },
+      data: {
+        ...rest,
+        ...(agreementNumber ? { agreementNumber } : {}),
+      },
+    });
     await audit({
       actorId: user.id,
       entityType: "MasterAgreement",
       entityId: id,
       action: "UPDATE",
-      diff: { before, after: rest },
+      diff: { before, after: { ...rest, agreementNumber } },
     });
     revalidatePath(`/crm/agreements/${id}`);
     revalidatePath("/crm/agreements");
@@ -286,9 +324,6 @@ export async function createMsaAndAddendumFromOffer(offerId: string, form: FormD
     return fail("Müştəri seçilməyib. Əvvəlcə müraciəti mövcud müştəriyə bağlayın.");
   }
 
-  const agreementNumber = (form.get("agreementNumber") as string | null)?.trim().toUpperCase();
-  if (!agreementNumber) return fail("Müqavilə nömrəsi tələb olunur");
-
   const effectiveFromRaw = form.get("effectiveFrom") as string | null;
   const effectiveToRaw = form.get("effectiveTo") as string | null;
   const equipmentId = form.get("equipmentId") as string | null;
@@ -299,6 +334,7 @@ export async function createMsaAndAddendumFromOffer(offerId: string, form: FormD
       // 1. Find or create MSA for this client.
       let msa = await tx.masterAgreement.findUnique({ where: { clientId } });
       if (!msa) {
+        const agreementNumber = await generateAgreementNumber(tx);
         msa = await tx.masterAgreement.create({
           data: {
             clientId,
