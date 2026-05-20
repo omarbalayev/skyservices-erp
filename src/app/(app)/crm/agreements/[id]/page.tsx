@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/page-header";
+import { PipelineStepper } from "@/components/pipeline-stepper";
+import { NextActionBanner } from "@/components/next-action-banner";
 import { fmtDate } from "@/lib/format";
 import { ADDENDUM_KIND_LABELS, ADDENDUM_STATUS_LABELS, MSA_STATUS_LABELS } from "@/lib/enum-labels";
 import { softDeleteMasterAgreement } from "@/modules/agreements/actions";
@@ -45,6 +47,47 @@ export default async function MsaDetailPage({ params }: { params: { id: string }
 
   const editable = canEdit(user.role, CRM_EDITORS);
 
+  const draftAddendum = msa.addendums.find((a) => a.status === "DRAFT");
+  const activeAddendum = msa.addendums.find((a) => a.status === "ACTIVE");
+  const hasActive = !!activeAddendum;
+
+  let banner:
+    | {
+        variant: "info" | "success" | "warning" | "muted";
+        title: string;
+        description?: string;
+        cta?: { label: string; href: string };
+      }
+    | null = null;
+  if (msa.status === "DRAFT") {
+    banner = {
+      variant: "info",
+      title: "Növbəti addım: müqaviləni imzalandığı tarixdə qeyd edin.",
+      cta: { label: "Redaktə et", href: `/crm/agreements/${msa.id}/edit` },
+    };
+  } else if (msa.status === "TERMINATED") {
+    banner = { variant: "muted", title: "Müqavilə ləğv edilib." };
+  } else if (msa.status === "EXPIRED") {
+    banner = { variant: "muted", title: "Müqavilənin müddəti bitib." };
+  } else if (msa.addendums.length === 0) {
+    banner = {
+      variant: "info",
+      title: "Növbəti addım: ilk əlavə yaradın.",
+      cta: { label: "Yeni əlavə", href: `/crm/agreements/${msa.id}/addendums/new` },
+    };
+  } else if (draftAddendum) {
+    banner = {
+      variant: "info",
+      title: "Yeni əlavə qaralamadadır — imzalayıb aktivləşdirin.",
+      cta: {
+        label: `Əlavə ${draftAddendum.addendumNumber}`,
+        href: `/crm/agreements/${msa.id}/addendums/${draftAddendum.id}`,
+      },
+    };
+  } else if (hasActive) {
+    banner = { variant: "success", title: "Aktiv müqavilə." };
+  }
+
   return (
     <div className="space-y-4">
       <PageHeader
@@ -75,6 +118,26 @@ export default async function MsaDetailPage({ params }: { params: { id: string }
           </div>
         }
       />
+
+      <PipelineStepper
+        currentStep={hasActive ? "ACTIVE" : "CONTRACT"}
+        links={{
+          LEAD: `/crm/clients/${msa.clientId}`,
+          CONTRACT: `/crm/agreements/${msa.id}`,
+          ...(activeAddendum && {
+            ACTIVE: `/crm/agreements/${msa.id}/addendums/${activeAddendum.id}`,
+          }),
+        }}
+      />
+
+      {banner && (
+        <NextActionBanner
+          variant={banner.variant}
+          title={banner.title}
+          description={banner.description}
+          cta={banner.cta}
+        />
+      )}
 
       <Card>
         <CardHeader>

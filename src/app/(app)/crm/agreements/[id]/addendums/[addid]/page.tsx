@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/page-header";
+import { PipelineStepper } from "@/components/pipeline-stepper";
+import { NextActionBanner } from "@/components/next-action-banner";
 import { fmtDate } from "@/lib/format";
 import { ADDENDUM_KIND_LABELS, ADDENDUM_STATUS_LABELS } from "@/lib/enum-labels";
 import {
@@ -44,16 +46,10 @@ export default async function AddendumDetailPage({
   if (!addendum || addendum.deletedAt) notFound();
   if (addendum.masterAgreementId !== params.id) notFound();
 
-  // Pickable equipment: AVAILABLE units, PLUS any unit already attached to this addendum
-  // (so it stays listed even though it's now ON_RENT because of THIS addendum).
+  // Pickable equipment: AVAILABLE units only — if a unit is on rent it must not appear
+  // in any picker. Units already attached to this addendum show in the line list above.
   const allEquipment = await prisma.equipment.findMany({
-    where: {
-      deletedAt: null,
-      OR: [
-        { status: "AVAILABLE" },
-        { addendumLines: { some: { addendumId: addendum.id } } },
-      ],
-    },
+    where: { deletedAt: null, status: "AVAILABLE" },
     orderBy: { code: "asc" },
     select: { id: true, code: true, name: true },
   });
@@ -69,6 +65,48 @@ export default async function AddendumDetailPage({
       transitions.push({ label: "Aktivləşdir", target: AddendumStatus.ACTIVE });
       break;
     default:
+      break;
+  }
+
+  const hasLines = addendum.equipmentLines.length > 0;
+  let banner:
+    | {
+        variant: "info" | "success" | "warning" | "muted";
+        title: string;
+        description?: string;
+        cta?: { label: string; href: string };
+      }
+    | null = null;
+  switch (addendum.status) {
+    case AddendumStatus.DRAFT:
+      banner = hasLines
+        ? {
+            variant: "info",
+            title: "Növbəti addım: müştəri ilə imzalandıqdan sonra 'İmzalandı' olaraq qeyd edin.",
+          }
+        : {
+            variant: "info",
+            title: "Növbəti addım: texnika sətirlərini əlavə edin.",
+            description: "Hər icarəyə veriləcək texnika üçün ayrıca sətir əlavə edin.",
+          };
+      break;
+    case AddendumStatus.SIGNED:
+      banner = {
+        variant: "info",
+        title: "Növbəti addım: texnika çatdırıldıqdan sonra aktivləşdirin.",
+        description:
+          "Aktivləşdirildikdən sonra texnikanın statusu avtomatik olaraq 'İcarədə' olur.",
+      };
+      break;
+    case AddendumStatus.ACTIVE:
+      banner = {
+        variant: "success",
+        title: "Aktiv icarə.",
+        description: "Aylıq hesab-faktura Phase 3-də avtomatlaşdırılacaq.",
+      };
+      break;
+    case AddendumStatus.SUPERSEDED:
+      banner = { variant: "muted", title: "Bu əlavə əvəz edilib." };
       break;
   }
 
@@ -104,6 +142,27 @@ export default async function AddendumDetailPage({
           </div>
         }
       />
+
+      <PipelineStepper
+        currentStep={
+          addendum.status === AddendumStatus.ACTIVE || addendum.status === AddendumStatus.SUPERSEDED
+            ? "ACTIVE"
+            : "CONTRACT"
+        }
+        links={{
+          CONTRACT: `/crm/agreements/${addendum.masterAgreementId}`,
+          ACTIVE: `/crm/agreements/${addendum.masterAgreementId}/addendums/${addendum.id}`,
+        }}
+      />
+
+      {banner && (
+        <NextActionBanner
+          variant={banner.variant}
+          title={banner.title}
+          description={banner.description}
+          cta={banner.cta}
+        />
+      )}
 
       <Card>
         <CardHeader>

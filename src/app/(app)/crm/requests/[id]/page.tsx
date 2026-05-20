@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/page-header";
+import { PipelineStepper } from "@/components/pipeline-stepper";
+import { NextActionBanner } from "@/components/next-action-banner";
 import { fmtDate } from "@/lib/format";
 import { DELIVERY_RESPONSIBILITY_LABELS, REQUEST_STATUS_LABELS } from "@/lib/enum-labels";
 import { softDeleteRequest } from "@/modules/leads/actions";
@@ -42,6 +44,48 @@ export default async function RequestDetailPage({ params }: { params: { id: stri
   const customerDisplay =
     req.lead.client?.name ?? req.lead.companyName ?? req.lead.contactName ?? "—";
 
+  // Latest offer drives the next-action banner.
+  const latestOffer = req.offers[0]; // sorted by version desc
+  let banner:
+    | {
+        variant: "info" | "success" | "warning" | "muted";
+        title: string;
+        description?: string;
+        cta?: { label: string; href: string };
+      }
+    | null = null;
+  if (req.status === "REJECTED") {
+    banner = { variant: "muted", title: "Sorğu rədd edilib." };
+  } else if (req.status === "CONVERTED") {
+    banner = { variant: "success", title: "Sorğu icarəyə çevrilib." };
+  } else if (!latestOffer) {
+    banner = {
+      variant: "info",
+      title: "Növbəti addım: bu sorğu üçün təklif hazırlayın.",
+      description: "Aşağıdakı 'Yeni təklif' düyməsi ilə qiyməti və şərtləri qeyd edin.",
+    };
+  } else if (latestOffer.status === "DRAFT") {
+    banner = {
+      variant: "info",
+      title: "Təklif qaralamadadır — yekunlaşdırıb göndərin.",
+      cta: { label: "Təklifə keç", href: `/crm/offers/${latestOffer.id}` },
+    };
+  } else if (latestOffer.status === "SENT") {
+    banner = {
+      variant: "warning",
+      title: "Müştəriyə təklif göndərilib — cavab gözlənilir.",
+      cta: { label: "Təklifə keç", href: `/crm/offers/${latestOffer.id}` },
+    };
+  } else if (latestOffer.status === "ACCEPTED") {
+    banner = {
+      variant: "success",
+      title: "Müştəri qəbul etdi — müqavilə + əlavə yaradın.",
+      cta: { label: "Təklifə keç", href: `/crm/offers/${latestOffer.id}` },
+    };
+  } else if (latestOffer.status === "REJECTED") {
+    banner = { variant: "muted", title: "Təklif rədd edilib. Yeni təklif hazırlamaq olar." };
+  }
+
   return (
     <div className="space-y-4">
       <PageHeader
@@ -72,6 +116,23 @@ export default async function RequestDetailPage({ params }: { params: { id: stri
           </div>
         }
       />
+
+      <PipelineStepper
+        currentStep="LEAD"
+        links={{
+          LEAD: `/crm/leads/${req.lead.id}`,
+          ...(latestOffer && { OFFER: `/crm/offers/${latestOffer.id}` }),
+        }}
+      />
+
+      {banner && (
+        <NextActionBanner
+          variant={banner.variant}
+          title={banner.title}
+          description={banner.description}
+          cta={banner.cta}
+        />
+      )}
 
       <Card>
         <CardHeader>

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
-import type { LeadStatus } from "@prisma/client";
+import type { LeadStatus, OfferStatus } from "@prisma/client";
 
 import { prisma } from "@/lib/db";
 import { requireUser, CRM_EDITORS, canEdit } from "@/lib/rbac";
@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/page-header";
+import { PipelineStepper } from "@/components/pipeline-stepper";
+import { NextActionBanner } from "@/components/next-action-banner";
 import { fmtDate } from "@/lib/format";
 import { LEAD_LOST_REASON_LABELS, LEAD_SOURCE_LABELS, LEAD_STATUS_LABELS } from "@/lib/enum-labels";
 import { softDeleteLead } from "@/modules/leads/actions";
@@ -26,7 +28,13 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
   const lead = await prisma.lead.findUnique({
     where: { id: params.id },
     include: {
-      client: { select: { id: true, name: true } },
+      client: {
+        select: {
+          id: true,
+          name: true,
+          masterAgreement: { select: { id: true, agreementNumber: true } },
+        },
+      },
       owner: { select: { id: true, name: true } },
       requests: {
         where: { deletedAt: null },
@@ -42,11 +50,86 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
           nightShift: true,
           createdAt: true,
           _count: { select: { offers: { where: { deletedAt: null } } } },
+          offers: {
+            where: { deletedAt: null },
+            orderBy: [{ createdAt: "desc" }],
+            take: 1,
+            select: { id: true, status: true },
+          },
         },
       },
     },
   });
   if (!lead || lead.deletedAt) notFound();
+
+  // Compute the next-action hint based on what exists.
+  const latestRequest = lead.requests[0]; // sorted desc
+  const latestOffer = latestRequest?.offers[0];
+  const offersAcrossAll = lead.requests
+    .flatMap((r) => r.offers)
+    .filter((o): o is { id: string; status: OfferStatus } => !!o);
+  const hasAcceptedOffer = offersAcrossAll.some((o) => o.status === "ACCEPTED");
+  const hasPendingOffer = offersAcrossAll.some((o) => o.status === "DRAFT" || o.status === "SENT");
+
+  type Banner = {
+    variant: "info" | "success" | "warning" | "muted";
+    title: string;
+    description?: string;
+    cta?: { label: string; href: string };
+  } | null;
+
+  let banner: Banner = null;
+  if (lead.status === "LOST") {
+    banner = {
+      variant: "muted",
+      title: "Müraciət itirilib",
+      description: lead.lostReason ? LEAD_LOST_REASON_LABELS[lead.lostReason] : undefined,
+    };
+  } else if (lead.status === "CONVERTED" && lead.client?.masterAgreement) {
+    banner = {
+      variant: "success",
+      title: "Müştəri ilə müqavilə bağlandı.",
+      cta: {
+        label: `MSA ${lead.client.masterAgreement.agreementNumber}`,
+        href: `/crm/agreements/${lead.client.masterAgreement.id}`,
+      },
+    };
+  } else if (!latestRequest) {
+    banner = {
+      variant: "info",
+      title: "Növbəti addım: sorğu əlavə edin.",
+      description: "Müştərinin istədiyi texnika, dövr və ərazi məlumatlarını qeyd edin.",
+    };
+  } else if (!latestOffer) {
+    banner = {
+      variant: "info",
+      title: "Növbəti addım: bu sorğu üçün təklif hazırlayın.",
+      cta: { label: "Sorğuya keç", href: `/crm/requests/${latestRequest.id}` },
+    };
+  } else if (latestOffer.status === "DRAFT") {
+    banner = {
+      variant: "info",
+      title: "Təklif hələ qaralamadır — yekunlaşdırıb müştəriyə göndərin.",
+      cta: { label: "Təklifə keç", href: `/crm/offers/${latestOffer.id}` },
+    };
+  } else if (latestOffer.status === "SENT") {
+    banner = {
+      variant: "warning",
+      title: "Müştəriyə təklif göndərilib — cavab gözlənilir.",
+      cta: { label: "Təklifə keç", href: `/crm/offers/${latestOffer.id}` },
+    };
+  } else if (hasAcceptedOffer) {
+    banner = {
+      variant: "success",
+      title: "Müştəri qəbul etdi — müqavilə + əlavə yaradın.",
+      cta: { label: "Təklifə keç", href: `/crm/offers/${latestOffer.id}` },
+    };
+  } else if (hasPendingOffer) {
+    banner = {
+      variant: "warning",
+      title: "Cavab gözlənilir.",
+    };
+  }
 
   const editable = canEdit(user.role, CRM_EDITORS);
   const displayName = lead.client?.name ?? lead.companyName ?? lead.contactName ?? "Adı yox";
@@ -82,6 +165,26 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
           </div>
         }
       />
+
+      <PipelineStepper
+        currentStep={lead.status === "CONVERTED" ? "CONTRACT" : "LEAD"}
+        links={{
+          ...(lead.client?.id && { LEAD: `/crm/clients/${lead.client.id}` }),
+          ...(latestOffer && { OFFER: `/crm/offers/${latestOffer.id}` }),
+          ...(lead.client?.masterAgreement && {
+            CONTRACT: `/crm/agreements/${lead.client.masterAgreement.id}`,
+          }),
+        }}
+      />
+
+      {banner && (
+        <NextActionBanner
+          variant={banner.variant}
+          title={banner.title}
+          description={banner.description}
+          cta={banner.cta}
+        />
+      )}
 
       <Card>
         <CardHeader>

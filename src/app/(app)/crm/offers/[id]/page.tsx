@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/page-header";
+import { PipelineStepper } from "@/components/pipeline-stepper";
+import { NextActionBanner } from "@/components/next-action-banner";
 import { fmtAzn, fmtDate } from "@/lib/format";
 import {
   OFFER_STATUS_LABELS,
@@ -75,6 +77,48 @@ export default async function OfferDetailPage({ params }: { params: { id: string
       break;
   }
 
+  // Next-action banner based on offer.status
+  let banner:
+    | {
+        variant: "info" | "success" | "warning" | "muted";
+        title: string;
+        description?: string;
+        cta?: { label: string; href: string };
+      }
+    | null = null;
+  switch (offer.status) {
+    case OfferStatus.DRAFT:
+      banner = {
+        variant: "info",
+        title: "Növbəti addım: təklifi müştəriyə göndərin.",
+        description: "Aşağıdakı 'Göndərildi olaraq qeyd et' düyməsi ilə statusu dəyişin.",
+      };
+      break;
+    case OfferStatus.SENT:
+      banner = {
+        variant: "warning",
+        title: "Müştərinin cavabını gözləyirik.",
+        description: "Cavab gələndə Qəbul / Rədd / Vaxtı keçdi olaraq qeyd edin.",
+      };
+      break;
+    case OfferStatus.ACCEPTED:
+      banner = {
+        variant: "success",
+        title: "Müştəri qəbul etdi! İndi müqavilə + əlavə yaradın.",
+        description: "Səhifənin sonundakı 'MSA + Əlavə yarat' formundan istifadə edin.",
+      };
+      break;
+    case OfferStatus.REJECTED:
+      banner = { variant: "muted", title: "Təklif rədd edilib." };
+      break;
+    case OfferStatus.EXPIRED:
+      banner = { variant: "muted", title: "Təklifin vaxtı keçib." };
+      break;
+    case OfferStatus.SUPERSEDED:
+      banner = { variant: "muted", title: "Bu təklif əvəz edilib." };
+      break;
+  }
+
   return (
     <div className="space-y-4">
       <PageHeader
@@ -105,6 +149,23 @@ export default async function OfferDetailPage({ params }: { params: { id: string
           </div>
         }
       />
+
+      <PipelineStepper
+        currentStep="OFFER"
+        links={{
+          LEAD: `/crm/leads/${offer.request.lead.id}`,
+          OFFER: `/crm/offers/${offer.id}`,
+        }}
+      />
+
+      {banner && (
+        <NextActionBanner
+          variant={banner.variant}
+          title={banner.title}
+          description={banner.description}
+          cta={banner.cta}
+        />
+      )}
 
       <Card>
         <CardHeader>
