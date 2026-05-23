@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 
 const TABS = [
   { href: "/crm/clients", label: "Müştərilər" },
-  { href: "/crm/leads", label: "Müraciətlər" },
+  { href: "/crm/requests", label: "Sorğular" },
   { href: "/crm/offers", label: "Təkliflər" },
   { href: "/crm/agreements", label: "Müqavilələr" },
 ];

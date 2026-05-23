@@ -12,7 +12,11 @@ import { PageHeader } from "@/components/page-header";
 import { PipelineStepper } from "@/components/pipeline-stepper";
 import { NextActionBanner } from "@/components/next-action-banner";
 import { fmtDate } from "@/lib/format";
-import { DELIVERY_RESPONSIBILITY_LABELS, REQUEST_STATUS_LABELS } from "@/lib/enum-labels";
+import {
+  DELIVERY_RESPONSIBILITY_LABELS,
+  LEAD_SOURCE_LABELS,
+  REQUEST_STATUS_LABELS,
+} from "@/lib/enum-labels";
 import { softDeleteRequest } from "@/modules/leads/actions";
 import OffersPanel from "./offers-panel";
 
@@ -23,13 +27,37 @@ const STATUS_VARIANTS: Record<RequestStatus, BadgeProps["variant"]> = {
   CONVERTED: "success",
 };
 
-export default async function RequestDetailPage({ params }: { params: { id: string } }) {
+export default async function RequestDetailPage({
+  params,
+  searchParams,
+}: {
+  params: { id: string };
+  searchParams?: { newOffer?: string };
+}) {
   const user = await requireUser();
   const req = await prisma.request.findUnique({
     where: { id: params.id },
     include: {
       lead: {
-        select: { id: true, client: { select: { id: true, name: true } }, companyName: true, contactName: true },
+        select: {
+          id: true,
+          source: true,
+          client: {
+            select: {
+              id: true,
+              name: true,
+              contacts: {
+                where: { isPrimary: true },
+                select: { name: true, phone: true, email: true },
+                take: 1,
+              },
+            },
+          },
+          companyName: true,
+          contactName: true,
+          contactPhone: true,
+          contactEmail: true,
+        },
       },
       offers: {
         where: { deletedAt: null },
@@ -136,6 +164,68 @@ export default async function RequestDetailPage({ params }: { params: { id: stri
 
       <Card>
         <CardHeader>
+          <CardTitle>Kontakt</CardTitle>
+          <span className="text-xs text-slate-500">
+            Mənbə: {LEAD_SOURCE_LABELS[req.lead.source]}
+          </span>
+        </CardHeader>
+        <CardContent>
+          <dl className="grid grid-cols-1 gap-x-6 gap-y-3 text-sm sm:grid-cols-3">
+            <div>
+              <dt className="text-xs uppercase text-slate-400">Müştəri</dt>
+              <dd>
+                {req.lead.client ? (
+                  <Link
+                    href={`/crm/clients/${req.lead.client.id}`}
+                    className="font-medium text-brand-navy hover:underline"
+                  >
+                    {req.lead.client.name}
+                  </Link>
+                ) : req.lead.companyName ? (
+                  <span className="font-medium text-slate-900">{req.lead.companyName}</span>
+                ) : (
+                  <span className="text-slate-400">— (veb sorğu)</span>
+                )}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs uppercase text-slate-400">Əlaqədar şəxs</dt>
+              <dd>
+                {req.lead.client?.contacts[0]?.name ??
+                  req.lead.contactName ?? <span className="text-slate-400">—</span>}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs uppercase text-slate-400">Telefon</dt>
+              <dd>
+                {req.lead.client?.contacts[0]?.phone ??
+                  req.lead.contactPhone ?? <span className="text-slate-400">—</span>}
+              </dd>
+            </div>
+            <div className="sm:col-span-2">
+              <dt className="text-xs uppercase text-slate-400">Email</dt>
+              <dd>
+                {req.lead.client?.contacts[0]?.email ??
+                  req.lead.contactEmail ?? <span className="text-slate-400">—</span>}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs uppercase text-slate-400">Tarixçə</dt>
+              <dd>
+                <Link
+                  href={`/crm/leads/${req.lead.id}`}
+                  className="text-brand-navy hover:underline"
+                >
+                  Bu kontaktın bütün sorğuları
+                </Link>
+              </dd>
+            </div>
+          </dl>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Sorğu məlumatları</CardTitle>
           <Badge variant={STATUS_VARIANTS[req.status]}>{REQUEST_STATUS_LABELS[req.status]}</Badge>
         </CardHeader>
@@ -193,6 +283,7 @@ export default async function RequestDetailPage({ params }: { params: { id: stri
 
       <OffersPanel
         requestId={req.id}
+        defaultOpen={searchParams?.newOffer === "1"}
         offers={req.offers.map((o) => ({
           id: o.id,
           version: o.version,

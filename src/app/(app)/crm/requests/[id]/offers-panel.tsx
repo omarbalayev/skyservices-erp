@@ -33,11 +33,13 @@ const STATUS_VARIANTS: Record<OfferStatus, BadgeProps["variant"]> = {
 export default function OffersPanel({
   requestId,
   offers,
+  defaultOpen = false,
 }: {
   requestId: string;
   offers: OfferRow[];
+  defaultOpen?: boolean;
 }) {
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(defaultOpen);
 
   return (
     <Card>

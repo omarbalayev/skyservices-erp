@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { Plus } from "lucide-react";
 import type { OfferStatus } from "@prisma/client";
 
 import { prisma } from "@/lib/db";
+import { Button } from "@/components/ui/button";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { PageHeader } from "@/components/page-header";
 import { DataTable, type Column } from "@/components/data-table";
@@ -75,7 +77,18 @@ export default async function OffersPage() {
 
   return (
     <div>
-      <PageHeader title="Təkliflər" description={`${offers.length} aktiv təklif`} />
+      <PageHeader
+        title="Təkliflər"
+        description={`${offers.length} aktiv təklif`}
+        actions={
+          <Link href="/crm/offers/new">
+            <Button>
+              <Plus className="h-4 w-4" />
+              Yeni təklif
+            </Button>
+          </Link>
+        }
+      />
       <DataTable data={offers} columns={columns} rowKey={(o) => o.id} />
     </div>
   );

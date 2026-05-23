@@ -6,9 +6,9 @@ import { requireRole, CRM_EDITORS } from "@/lib/rbac";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/page-header";
 import { createLeadWithRequest } from "@/modules/leads/actions";
-import NewLeadForm from "../new-lead-form";
+import NewLeadForm from "../../leads/new-lead-form";
 
-export default async function NewLeadPage({
+export default async function NewRequestPage({
   searchParams,
 }: {
   searchParams: { clientId?: string };
