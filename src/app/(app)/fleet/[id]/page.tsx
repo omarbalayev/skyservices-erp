@@ -16,6 +16,7 @@ import { softDeleteEquipment } from "@/modules/equipment/actions";
 const STATUS_VARIANTS: Record<EquipmentStatus, BadgeProps["variant"]> = {
   AVAILABLE: "success",
   RESERVED: "info",
+  OFFERED: "warning",
   ON_RENT: "warning",
   IN_TRANSIT: "info",
   IN_REPAIR: "warning",

@@ -1,17 +1,18 @@
-import { AddendumStatus, EquipmentStatus } from "@prisma/client";
+import { AddendumStatus, EquipmentStatus, OfferStatus } from "@prisma/client";
 
 import { prisma } from "@/lib/db";
 
 /**
- * Recompute equipment status from the addendum stream.
+ * Recompute equipment status from the addendum + offer streams.
  *
- * Phase 1 rule: an equipment is `ON_RENT` if it has at least one AddendumEquipment
- * line on an `ACTIVE` Addendum whose `endedAt` is null or in the future. Otherwise
- * it falls back to `AVAILABLE`.
- *
- * `IN_REPAIR` / `IN_TRANSIT` / `RESERVED` / `OUT_OF_SERVICE` are NOT overwritten by
- * this helper — those are managed manually by garage operations (Phase 2). To opt
- * back into auto-tracking from one of those states, call `forceRecompute = true`.
+ * Priority (highest wins):
+ *   1. Protected manual states (IN_REPAIR / OUT_OF_SERVICE / RESERVED / IN_TRANSIT)
+ *      — never overwritten unless `forceRecompute = true`.
+ *   2. ON_RENT — at least one AddendumEquipment line on an ACTIVE addendum
+ *      whose endedAt is null or in the future.
+ *   3. OFFERED — at least one OfferEquipment line on a non-deleted Offer with
+ *      status DRAFT or SENT (the offer is in flight; the unit is held).
+ *   4. AVAILABLE — fallback.
  */
 export async function syncEquipmentStatus(
   equipmentId: string,
@@ -23,7 +24,6 @@ export async function syncEquipmentStatus(
   });
   if (!eq || eq.deletedAt) return;
 
-  // Don't auto-clobber manually-set states unless caller asks.
   const protectedStatuses: EquipmentStatus[] = [
     EquipmentStatus.IN_REPAIR,
     EquipmentStatus.OUT_OF_SERVICE,
@@ -33,7 +33,7 @@ export async function syncEquipmentStatus(
   if (!options.forceRecompute && protectedStatuses.includes(eq.status)) return;
 
   const now = new Date();
-  const activeLineCount = await prisma.addendumEquipment.count({
+  const activeAddendumLines = await prisma.addendumEquipment.count({
     where: {
       equipmentId,
       OR: [{ endedAt: null }, { endedAt: { gt: now } }],
@@ -44,7 +44,21 @@ export async function syncEquipmentStatus(
     },
   });
 
-  const target = activeLineCount > 0 ? EquipmentStatus.ON_RENT : EquipmentStatus.AVAILABLE;
+  let target: EquipmentStatus;
+  if (activeAddendumLines > 0) {
+    target = EquipmentStatus.ON_RENT;
+  } else {
+    const openOfferLines = await prisma.offerEquipment.count({
+      where: {
+        equipmentId,
+        offer: {
+          status: { in: [OfferStatus.DRAFT, OfferStatus.SENT] },
+          deletedAt: null,
+        },
+      },
+    });
+    target = openOfferLines > 0 ? EquipmentStatus.OFFERED : EquipmentStatus.AVAILABLE;
+  }
 
   if (eq.status !== target) {
     await prisma.equipment.update({ where: { id: equipmentId }, data: { status: target } });

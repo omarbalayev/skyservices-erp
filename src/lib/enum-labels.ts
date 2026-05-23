@@ -131,6 +131,7 @@ export const ADDENDUM_STATUS_LABELS: Record<AddendumStatus, string> = {
 export const EQUIPMENT_STATUS_LABELS: Record<EquipmentStatus, string> = {
   AVAILABLE: "Boşda",
   RESERVED: "Rezerv",
+  OFFERED: "Təklifdə",
   ON_RENT: "İcarədə",
   IN_TRANSIT: "Daşınmada",
   IN_REPAIR: "Təmirdə",
